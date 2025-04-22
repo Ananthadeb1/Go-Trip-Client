@@ -1,9 +1,14 @@
+import { useContext } from "react";
+import { AuthContext } from "../../../Provider/AuthProvider";
+
 
 
 const Home = () => {
+    const { user } = useContext(AuthContext);
+
     return (
         <div>
-            <h1>this is home</h1>
+            {user ? <h1>Welcome, {user.email}!</h1> : <h1>This is Home</h1>}
         </div>
     );
 };
