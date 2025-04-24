@@ -3,6 +3,7 @@ import { updateProfile } from "firebase/auth";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../Provider/AuthProvider";
+import SocialLogin from "../Shared/ScoialLogin/SocialLogin";
 
 const Signup = () => {
     const { register, handleSubmit, setError, formState: { errors }, } = useForm();
@@ -49,8 +50,8 @@ const Signup = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100">
-            <div className="w-full max-w-md p-8 bg-white shadow-lg rounded-lg">
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 ">
+            <div className="w-full max-w-md p-8 bg-white shadow-lg rounded-lg my-15">
                 <div className="text-center mb-6">
                     <h1 className="text-3xl font-bold mb-2">Sign up</h1>
                     <p className="text-gray-500">Create your account to get started</p>
@@ -106,7 +107,8 @@ const Signup = () => {
                     >
                         Sign up
                     </button>
-                    <p className="text-center text-sm text-gray-600 mt-4">
+                    <SocialLogin></SocialLogin>
+                    <p className="text-center text-sm text-gray-600 ">
                         Already have an account? <Link to={"/login"} className="text-blue-500 hover:underline">Log in</Link>
                     </p>
                 </form>

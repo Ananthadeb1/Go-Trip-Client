@@ -1,6 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { AuthContext } from '../../Provider/AuthProvider';
 import { Link, useNavigate } from 'react-router-dom';
+import SocialLogin from '../Shared/ScoialLogin/SocialLogin';
 
 const Login = () => {
     const { login } = useContext(AuthContext);
@@ -68,9 +69,12 @@ const Login = () => {
                         {errors.general && <p className="text-red-500 text-sm mt-2 text-center">{errors.general}</p>}
                     </div>
                 </form>
-                <p className="text-center mt-4">
-                    New Here? <Link to={"/signup"} className="text-blue-500 hover:underline">create an account</Link>
-                </p>
+                <SocialLogin></SocialLogin>
+                <div>
+                    <p className="text-center text-sm text-gray-600 mt-6">
+                        New Here? <Link to={"/signup"} className="text-blue-500 hover:underline">create an account</Link>
+                    </p>
+                </div>
             </div>
         </div>
     );
