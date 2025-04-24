@@ -8,7 +8,7 @@ const Home = () => {
 
     return (
         <div>
-            {user ? <h1>Welcome, {user.email}!</h1> : <h1>This is Home</h1>}
+            <p>Welcome, {user ? user.displayName : "Guest"}!</p>
         </div>
     );
 };
