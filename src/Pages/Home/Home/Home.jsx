@@ -9,6 +9,11 @@ const Home = () => {
     return (
         <div>
             <p>Welcome, {user ? user.displayName : "Guest"}!</p>
+            <img
+                src={user ? user.photoURL : ''}
+                alt=""
+                className="rounded-full"
+            />
         </div>
     );
 };

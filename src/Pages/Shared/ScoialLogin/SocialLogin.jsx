@@ -1,7 +1,6 @@
 import React, { useContext } from 'react';
 import { AuthContext } from '../../../Provider/AuthProvider';
 import googleLogo from "./../../../../public/images/loginimg/google.png";
-import { updateProfile } from 'firebase/auth';
 
 const SocialLogin = () => {
     const { loginWithGoogle } = useContext(AuthContext);
@@ -10,11 +9,6 @@ const SocialLogin = () => {
             .then(result => {
                 const loggedUser = result.user;
                 console.log(loggedUser);
-                // Save the user name
-                const userName = loggedUser.displayName;
-                console.log("User Name:", userName);
-                updateProfile(loggedUser, { displayName: userName })
-                // Redirect to the home page
                 window.location.href = '/';
             })
             .catch(error => {

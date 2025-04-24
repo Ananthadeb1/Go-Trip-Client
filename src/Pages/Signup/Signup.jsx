@@ -11,7 +11,7 @@ const Signup = () => {
     const navigate = useNavigate();
 
     const onSubmit = (data) => {
-        const name = data.name;
+        const name = data.name; // Restore the name variable
         const email = data.email;
         const password1 = data.password;
         const password2 = data.confirm_password;
@@ -101,12 +101,7 @@ const Signup = () => {
                         />
                         {errors.confirm_password && <span className="text-red-500 text-sm">{errors.confirm_password.message}</span>}
                     </div>
-                    <button
-                        type="submit"
-                        className="w-full py-2 px-4 bg-blue-500 text-white font-semibold rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-300"
-                    >
-                        Sign up
-                    </button>
+                    <input className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 cursor-pointer" type="submit" value="Sign up" />
                     <SocialLogin></SocialLogin>
                     <p className="text-center text-sm text-gray-600 ">
                         Already have an account? <Link to={"/login"} className="text-blue-500 hover:underline">Log in</Link>
