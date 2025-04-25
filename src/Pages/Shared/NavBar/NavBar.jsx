@@ -15,7 +15,7 @@ const NavBar = () => {
             <button>login</button> */}
             <div className="flex space-x-4 justify-center">
                 <button><Link to={"/"}>home</Link></button>
-                {/* <button><Link to={"/login"}>login</Link></button> */}
+                <button><Link to={"/booking"}>Booking</Link></button>
                 {
                     user ? <>
                         <button onClick={handleLogOut} className="btn ">Log out</button>

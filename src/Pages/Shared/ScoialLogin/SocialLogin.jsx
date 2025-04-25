@@ -1,15 +1,19 @@
 import React, { useContext } from 'react';
 import { AuthContext } from '../../../Provider/AuthProvider';
 import googleLogo from "./../../../../public/images/loginimg/google.png";
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const SocialLogin = () => {
     const { loginWithGoogle } = useContext(AuthContext);
-    const hendleGoogleLogin = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const from = location.state?.from?.pathname || "/";
+    const handleGoogleLogin = () => {
         loginWithGoogle()
             .then(result => {
                 const loggedUser = result.user;
                 console.log(loggedUser);
-                window.location.href = '/';
+                navigate(from, { replace: true });
             })
             .catch(error => {
                 console.error("Google login failed:", error);
@@ -24,7 +28,7 @@ const SocialLogin = () => {
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
                 <button
-                    onClick={hendleGoogleLogin}
+                    onClick={handleGoogleLogin}
                     style={{ cursor: 'pointer' }}
                 >
                     <img src={googleLogo} alt="Google logo" className='h-8' />
