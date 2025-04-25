@@ -2,17 +2,29 @@ import React, { useContext } from 'react';
 import { AuthContext } from '../../../Provider/AuthProvider';
 import googleLogo from "./../../../../public/images/loginimg/google.png";
 import { useLocation, useNavigate } from 'react-router-dom';
+import useAxiosPublic from '../../../hooks/useAxiosPublic';
 
 const SocialLogin = () => {
     const { loginWithGoogle } = useContext(AuthContext);
     const navigate = useNavigate();
     const location = useLocation();
     const from = location.state?.from?.pathname || "/";
+    const axiosPublic = useAxiosPublic();
+
     const handleGoogleLogin = () => {
         loginWithGoogle()
             .then(result => {
                 const loggedUser = result.user;
                 console.log(loggedUser);
+                const userInfo = {
+                    name: loggedUser?.displayName,
+                    email: loggedUser?.email,
+                    image: loggedUser?.photoURL
+                };
+                axiosPublic.post("/users", userInfo)
+                    .then(res => {
+                        console.log("User info saved to database:", res.data);
+                    })
                 navigate(from, { replace: true });
             })
             .catch(error => {

@@ -1,17 +1,18 @@
 import { useContext } from "react";
-import { updateProfile } from "firebase/auth";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../Provider/AuthProvider";
 import SocialLogin from "../Shared/ScoialLogin/SocialLogin";
+import useAxiosPublic from "../../hooks/useAxiosPublic";
 
 const Signup = () => {
-    const { register, handleSubmit, setError, formState: { errors }, } = useForm();
-    const { createUser } = useContext(AuthContext);
+    const axiosPublic = useAxiosPublic();
+    const { register, handleSubmit, setError, reset, formState: { errors }, } = useForm();
+    const { createUser, updateUserProfile } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const onSubmit = (data) => {
-        const name = data.name; // Restore the name variable
+        const name = data.name;
         const email = data.email;
         const password1 = data.password;
         const password2 = data.confirm_password;
@@ -33,20 +34,37 @@ const Signup = () => {
             .then(result => {
                 const loggedUser = result.user;
                 console.log(loggedUser);
-                updateProfile(loggedUser, { displayName: name })
-                navigate("/");
-            })
-            .catch(error => {
-                if (error.code === "auth/email-already-in-use") {
-                    setError("email", { type: "manual", message: "Email is already in use. Please use a different email." });
-                } else if (error.code === "auth/invalid-email") {
-                    setError("email", { type: "manual", message: "Invalid email format. Please enter a valid email." });
-                } else if (error.code === "auth/weak-password") {
-                    setError("password", { type: "manual", message: "Password is too weak. Please use a stronger password." });
-                } else {
-                    setError("form", { type: "manual", message: "Failed to create user. Please try again." });
-                }
+                updateUserProfile(loggedUser, {
+                    displayName: name,
+                })
+                    .then(() => {
+                        const userInfo = {
+                            name: name,
+                            email: email
+                        }
+                        axiosPublic.post("/users", userInfo)
+                            .then(res => {
+                                if (res.data.insertedId) {
+                                    console.log("User info saved to database:", res.data);
+                                }
+                                else console.log("User info not saved to database:", res.data);
+                            })
+
+                        reset();
+                        navigate("/");
+                    }).catch(error => {
+                        if (error.code === "auth/email-already-in-use") {
+                            setError("email", { type: "manual", message: "Email is already in use. Please use a different email." });
+                        } else if (error.code === "auth/invalid-email") {
+                            setError("email", { type: "manual", message: "Invalid email format. Please enter a valid email." });
+                        } else if (error.code === "auth/weak-password") {
+                            setError("password", { type: "manual", message: "Password is too weak. Please use a stronger password." });
+                        } else {
+                            setError("form", { type: "manual", message: "Failed to create user. Please try again." });
+                        }
+                    });
             });
+
     };
 
     return (
