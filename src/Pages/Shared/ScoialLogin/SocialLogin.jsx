@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import useAxiosPublic from '../../../hooks/useAxiosPublic';
 
 const SocialLogin = () => {
-    const { loginWithGoogle } = useContext(AuthContext);
+    const { loginWithGoogle, updateUserProfile } = useContext(AuthContext);
     const navigate = useNavigate();
     const location = useLocation();
     const from = location.state?.from?.pathname || "/";
@@ -15,6 +15,16 @@ const SocialLogin = () => {
         loginWithGoogle()
             .then(result => {
                 const loggedUser = result.user;
+                updateUserProfile(loggedUser, {
+                    displayName: loggedUser.displayName,
+                    photoURL: loggedUser.photoURL
+                })
+                    .then(() => {
+                        console.log("User profile updated:", loggedUser);
+                    })
+                    .catch(error => {
+                        console.error("Error updating user profile:", error);
+                    });
                 console.log(loggedUser);
                 const userInfo = {
                     name: loggedUser?.displayName,

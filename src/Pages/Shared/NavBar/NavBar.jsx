@@ -1,9 +1,11 @@
 import { useContext } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../../../Provider/AuthProvider";
+import useAdmin from "../../../hooks/useAdmin";
 
 const NavBar = () => {
-    const isAdmin = true;
+    const [isAdmin] = useAdmin();
+    // const isAdmin = true; // For testing purposes, set isAdmin to true
     const { user, logout } = useContext(AuthContext)
     const handleLogOut = () => {
         logout()

@@ -21,7 +21,7 @@ const googleProvider = new GoogleAuthProvider();
 const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const axiosPublic = useAxiosPublic(); // Assuming you have a custom hook for axios
+    const axiosPublic = useAxiosPublic();
 
     const createUser = (email, password) => {
         setLoading(true);
@@ -71,7 +71,7 @@ const AuthProvider = ({ children }) => {
         return () => {
             return unsubscribe();
         };
-    }, []);
+    }, [axiosPublic]);
 
     const authinfo = {
         user,
