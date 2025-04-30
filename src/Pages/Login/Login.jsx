@@ -1,10 +1,10 @@
-import React, { useContext, useState } from 'react';
-import { AuthContext } from '../../Provider/AuthProvider';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import SocialLogin from '../Shared/ScoialLogin/SocialLogin';
+import useAuth from '../../hooks/useAuth';
+import { useState } from 'react';
 
 const Login = () => {
-    const { login } = useContext(AuthContext);
+    const { login } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [errors, setErrors] = useState({ email: '', password: '', general: '' });

@@ -1,17 +1,24 @@
-import { useContext } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { AuthContext } from "../../Provider/AuthProvider";
 import SocialLogin from "../Shared/ScoialLogin/SocialLogin";
 import useAxiosPublic from "../../hooks/useAxiosPublic";
+import useAuth from "../../hooks/useAuth";
 
 const Signup = () => {
     const axiosPublic = useAxiosPublic();
-    const { register, handleSubmit, setError, reset, formState: { errors }, } = useForm();
-    const { createUser, updateUserProfile } = useContext(AuthContext);
+    const { register, setError, formState: { errors }, } = useForm();
+    const { createUser, updateUserProfile } = useAuth();
     const navigate = useNavigate();
 
-    const onSubmit = (data) => {
+    const handleSignup = (event) => {
+        event.preventDefault();
+        const form = event.target;
+        const data = {
+            name: form.name.value,
+            email: form.email.value,
+            password: form.password.value,
+            confirm_password: form.confirm_password.value,
+        };
         const name = data.name;
         const email = data.email;
         const password1 = data.password;
@@ -33,36 +40,38 @@ const Signup = () => {
         createUser(email, password1)
             .then(result => {
                 const loggedUser = result.user;
-                console.log(loggedUser);
                 updateUserProfile(loggedUser, {
                     displayName: name,
                 })
                     .then(() => {
-                        const userInfo = {
-                            name: name,
-                            email: email
-                        }
-                        axiosPublic.post("/users", userInfo)
-                            .then(res => {
-                                if (res.data.insertedId) {
-                                    console.log("User info saved to database:", res.data);
-                                }
-                                else console.log("User info not saved to database:", res.data);
-                            })
-
-                        reset();
-                        navigate("/");
-                    }).catch(error => {
-                        if (error.code === "auth/email-already-in-use") {
-                            setError("email", { type: "manual", message: "Email is already in use. Please use a different email." });
-                        } else if (error.code === "auth/invalid-email") {
-                            setError("email", { type: "manual", message: "Invalid email format. Please enter a valid email." });
-                        } else if (error.code === "auth/weak-password") {
-                            setError("password", { type: "manual", message: "Password is too weak. Please use a stronger password." });
-                        } else {
-                            setError("form", { type: "manual", message: "Failed to create user. Please try again." });
-                        }
+                        console.log("User profile updated successfully");
+                    })
+                    .catch(error => {
+                        console.error("Error updating user profile:", error);
                     });
+                console.log("loggedUser", loggedUser);
+                const userInfo = {
+                    name: name,
+                    email: email
+                }
+                axiosPublic.post("/users", userInfo)
+                    .then(res => {
+                        if (res.data.insertedId) {
+                            console.log("User info saved to database:", res.data);
+                        }
+                        else console.log("User info not saved to database:", res.data);
+                    });
+                navigate("/");
+            }).catch(error => {
+                if (error.code === "auth/email-already-in-use") {
+                    setError("email", { type: "manual", message: "Email is already in use. Please use a different email." });
+                } else if (error.code === "auth/invalid-email") {
+                    setError("email", { type: "manual", message: "Invalid email format. Please enter a valid email." });
+                } else if (error.code === "auth/weak-password") {
+                    setError("password", { type: "manual", message: "Password is too weak. Please use a stronger password." });
+                } else {
+                    setError("form", { type: "manual", message: "Failed to create user. Please try again." });
+                }
             });
 
     };
@@ -74,7 +83,7 @@ const Signup = () => {
                     <h1 className="text-3xl font-bold mb-2">Sign up</h1>
                     <p className="text-gray-500">Create your account to get started</p>
                 </div>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <form onSubmit={handleSignup} className="space-y-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                         <input

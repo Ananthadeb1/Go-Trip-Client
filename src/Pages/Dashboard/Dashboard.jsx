@@ -1,40 +1,56 @@
-import { useQuery } from '@tanstack/react-query';
-import useAxiosSecure from '../../hooks/useAxiosSecure';
-//rewatch from 68-5 ph video
+import { useState } from 'react';
+import UserManagement from './UserManagement/UserManagement';
+import Service from './Service/Service';
+
 const Dashboard = () => {
-    const axiosSecure = useAxiosSecure();
-    const { data: users = [] } = useQuery({ //refetch
-        queryKey: ['users'],
-        queryFn: async () => {
-            const res = await axiosSecure.get('/users');
-            return res.data;
-        }
-    })
+    const [selected, setSelected] = useState('User Management');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
     return (
-        <div className="p-6 bg-gray-100 min-h-screen">
-            <h1 className="text-2xl font-bold text-center mb-6">Only Admin Can Access This</h1>
-            <div className="bg-white shadow-md rounded-lg p-4">
-                <h2 className="text-xl font-semibold mb-4">Total Users: {users.length}</h2>
-                <div className="overflow-x-auto">
-                    <table className="table-auto w-full border-collapse border border-gray-300">
-                        <thead>
-                            <tr className="bg-gray-200">
-                                <th className="border border-gray-300 px-4 py-2 text-left">#</th>
-                                <th className="border border-gray-300 px-4 py-2 text-left">Name</th>
-                                <th className="border border-gray-300 px-4 py-2 text-left">Email</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {users.map((user, index) => (
-                                <tr key={user.id} className="hover:bg-gray-100">
-                                    <td className="border border-gray-300 px-4 py-2">{index + 1}</td>
-                                    <td className="border border-gray-300 px-4 py-2">{user.name}</td>
-                                    <td className="border border-gray-300 px-4 py-2">{user.email}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+        <div className="flex flex-col md:flex-row h-screen">
+            {/* Sidebar */}
+            <div
+                className={`fixed md:static z-10 bg-gray-100 p-4 w-64 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    } md:translate-x-0 transition-transform duration-300 ease-in-out`}
+            >
+                <button
+                    className="md:hidden mb-4 text-gray-700"
+                    onClick={() => setIsSidebarOpen(false)}
+                >
+                    Close
+                </button>
+                <ul className="space-y-4">
+                    {['User Management', 'Service'].map((item, index) => (
+                        <li key={index}>
+                            <button
+                                className={`w-full text-left p-2 rounded ${selected === item
+                                        ? 'bg-purple-500 text-white'
+                                        : 'bg-gray-200'
+                                    }`}
+                                onClick={() => {
+                                    setSelected(item);
+                                    setIsSidebarOpen(false);
+                                }}
+                            >
+                                {item}
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+
+            {/* Hamburger Menu */}
+            <button
+                className="md:hidden p-4 text-gray-700"
+                onClick={() => setIsSidebarOpen(true)}
+            >
+                Menu
+            </button>
+
+            {/* Main Content */}
+            <div className="flex-1 p-4 overflow-y-auto">
+                {selected === 'User Management' && <UserManagement />}
+                {selected === 'Service' && <Service />}
             </div>
         </div>
     );
