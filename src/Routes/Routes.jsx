@@ -8,6 +8,7 @@ import Signup from "../Pages/Signup/Signup";
 import PrivateRoute from "../Pages/Shared/PrivateRoute/PrivateRoute";
 import Booking from "../Pages/Booking/Booking";
 import Dashboard from "../Pages/Dashboard/Dashboard";
+import HotelDetails from "../Pages/Booking/HotelDetails/HotelDetails";
 
 
 export const router = createBrowserRouter([
@@ -36,6 +37,12 @@ export const router = createBrowserRouter([
                 element: <PrivateRoute>
                     <Booking></Booking>
                 </PrivateRoute>,
+            },
+            {
+                path: "/hotelDetails/:id",
+                element: <PrivateRoute>
+                    <HotelDetails></HotelDetails>
+                </PrivateRoute>
             }
         ]
     },
