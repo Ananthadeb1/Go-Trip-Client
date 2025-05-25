@@ -24,6 +24,7 @@
     "axios": "^1.9.0",
     "firebase": "^11.6.0",
     "font-awesome": "^4.7.0",
+    "framer-motion": "^12.12.2",
     "go-trip-client": "file:",
     "keen-slider": "^6.8.6",
     "pure-react-carousel": "^1.32.0",
