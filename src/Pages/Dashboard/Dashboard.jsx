@@ -24,8 +24,8 @@ const Dashboard = () => {
                         <li key={index}>
                             <button
                                 className={`w-full text-left p-2 rounded ${selected === item
-                                        ? 'bg-purple-500 text-white'
-                                        : 'bg-gray-200'
+                                    ? 'bg-purple-500 text-white'
+                                    : 'bg-gray-200'
                                     }`}
                                 onClick={() => {
                                     setSelected(item);

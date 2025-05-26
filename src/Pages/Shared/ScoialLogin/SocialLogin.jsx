@@ -15,27 +15,19 @@ const SocialLogin = () => {
         loginWithGoogle()
             .then(result => {
                 const loggedUser = result.user;
-                updateUserProfile(loggedUser, {
-                    displayName: loggedUser.displayName,
-                    photoURL: loggedUser.photoURL
-                })
+                return updateUserProfile(loggedUser.displayName, loggedUser.photoURL)
                     .then(() => {
-                        console.log("User profile updated:", loggedUser);
+                        // Manually update the user in context
+                        const userInfo = {
+                            name: loggedUser.displayName,
+                            email: loggedUser.email,
+                            image: loggedUser.photoURL
+                        };
+                        return axiosPublic.post("/users", userInfo);
                     })
-                    .catch(error => {
-                        console.error("Error updating user profile:", error);
+                    .then(() => {
+                        navigate(from, { replace: true });
                     });
-                console.log(loggedUser);
-                const userInfo = {
-                    name: loggedUser?.displayName,
-                    email: loggedUser?.email,
-                    image: loggedUser?.photoURL
-                };
-                axiosPublic.post("/users", userInfo)
-                    .then(res => {
-                        console.log("User info saved to database:", res.data);
-                    })
-                navigate(from, { replace: true });
             })
             .catch(error => {
                 console.error("Google login failed:", error);

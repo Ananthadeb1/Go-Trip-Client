@@ -39,6 +39,7 @@ const NavBar = () => {
                     <div className="flex items-center space-x-4">
                         <button onClick={handleLogOut} className="btn btn-primary">Log out</button>
                         {user.photoURL ? (
+                            console.log("profile", user.photoURL),
                             <div className="avatar">
                                 <div className="w-10 rounded-full">
                                     <img src={user.photoURL} alt="Profile" />

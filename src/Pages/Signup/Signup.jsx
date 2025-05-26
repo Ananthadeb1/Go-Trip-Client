@@ -39,29 +39,25 @@ const Signup = () => {
 
         createUser(email, password1)
             .then(result => {
-                const loggedUser = result.user;
-                updateUserProfile(loggedUser, {
-                    displayName: name,
-                })
+                updateUserProfile(result.name, "") // Fix: Pass name and empty string for photo
                     .then(() => {
                         console.log("User profile updated successfully");
+                        const userInfo = {
+                            name: name,
+                            email: email
+                        }
+                        axiosPublic.post("/users", userInfo)
+                            .then(res => {
+                                if (res.data.insertedId) {
+                                    console.log("User info saved to database:", res.data);
+                                }
+                                else console.log("User info not saved to database:", res.data);
+                            });
+                        navigate("/");
                     })
                     .catch(error => {
                         console.error("Error updating user profile:", error);
                     });
-                console.log("loggedUser", loggedUser);
-                const userInfo = {
-                    name: name,
-                    email: email
-                }
-                axiosPublic.post("/users", userInfo)
-                    .then(res => {
-                        if (res.data.insertedId) {
-                            console.log("User info saved to database:", res.data);
-                        }
-                        else console.log("User info not saved to database:", res.data);
-                    });
-                navigate("/");
             }).catch(error => {
                 if (error.code === "auth/email-already-in-use") {
                     setError("email", { type: "manual", message: "Email is already in use. Please use a different email." });

@@ -6,6 +6,7 @@ import BusBooking from "./BusBooking/BusBooking";
 import FlightBooking from "./FlightBooking/FlightBooking";
 import { faFilter, faMagnifyingGlass, faSort, faStar, faMapMarkerAlt, faUserFriends } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import DatePicker from "react-datepicker";
 
 const Booking = () => {
     const axioxPublic = useAxiosPublic();
@@ -175,9 +176,9 @@ const Booking = () => {
 
             {/* Content based on selected option */}
             {selectedOption === "Hotel" && (
-                <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                <div className="rounded-2xl overflow-hidden">
                     {/* Search Bar */}
-                    <div className="bg-gradient-to-r from-blue-500 to-blue-700 p-6">
+                    <div className="bg-gray-300 p-6 rounded-2xl">
                         <form onSubmit={applyFilters}
                             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
 
@@ -204,37 +205,70 @@ const Booking = () => {
 
                             {/* Check-in Date */}
                             <div className="relative">
-                                <input
-                                    type="date"
+                                <DatePicker
+                                    selected={searchParams.checkInDate ? new Date(searchParams.checkInDate) : null}
+                                    onChange={date => {
+                                        const formattedDate = date ? date.toISOString().split('T')[0] : "";
+                                        setSearchParams(prev => ({
+                                            ...prev,
+                                            checkInDate: formattedDate
+                                        }));
+                                        // Clear error when field is filled
+                                        if (formattedDate && searchErrors.checkInDate) {
+                                            setSearchErrors(prev => ({
+                                                ...prev,
+                                                checkInDate: undefined
+                                            }));
+                                        }
+                                    }}
+                                    minDate={new Date()}
+                                    selectsStart
+                                    startDate={searchParams.checkInDate ? new Date(searchParams.checkInDate) : null}
+                                    endDate={searchParams.checkOutDate ? new Date(searchParams.checkOutDate) : null}
+                                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-center"
+                                    placeholderText="Select check-in"
+                                    dateFormat="dd-MM-yyyy"
+                                    id="checkInDate"
                                     name="checkInDate"
-                                    className={`w-full px-4 py-3 rounded-lg border-0 focus:ring-2 focus:ring-blue-300 ${searchErrors.checkInDate ? "ring-2 ring-red-500" : ""}`}
-                                    value={searchParams.checkInDate}
-                                    onChange={handleInputChange}
-                                    min={new Date().toISOString().split('T')[0]}
                                     required
                                 />
                                 {searchErrors.checkInDate && (
                                     <p className="absolute -bottom-5 text-xs text-red-100">{searchErrors.checkInDate}</p>
                                 )}
                             </div>
-
-                            {/* Check-out Date */}
+                            {/* checkOutDate */}
                             <div className="relative">
-                                <input
-                                    type="date"
+                                <DatePicker
+                                    selected={searchParams.checkOutDate ? new Date(searchParams.checkOutDate) : null}
+                                    onChange={date => {
+                                        const formattedDate = date ? date.toISOString().split('T')[0] : "";
+                                        setSearchParams(prev => ({
+                                            ...prev,
+                                            checkOutDate: formattedDate
+                                        }));
+                                        // Clear error when field is filled
+                                        if (formattedDate && searchErrors.checkOutDate) {
+                                            setSearchErrors(prev => ({
+                                                ...prev,
+                                                checkOutDate: undefined
+                                            }));
+                                        }
+                                    }}
+                                    minDate={searchParams.checkInDate ? new Date(searchParams.checkInDate) : new Date()}
+                                    selectsEnd
+                                    startDate={searchParams.checkInDate ? new Date(searchParams.checkInDate) : null}
+                                    endDate={searchParams.checkOutDate ? new Date(searchParams.checkOutDate) : null}
+                                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-center"
+                                    placeholderText="Select check-out"
+                                    dateFormat="dd-MM-yyyy"
+                                    id="checkOutDate"
                                     name="checkOutDate"
-                                    className={`w-full px-4 py-3 rounded-lg border-0 focus:ring-2 focus:ring-blue-300 ${searchErrors.checkOutDate ? "ring-2 ring-red-500" : ""}`}
-                                    value={searchParams.checkOutDate}
-                                    onChange={handleInputChange}
-                                    min={searchParams.checkInDate || new Date().toISOString().split('T')[0]}
                                     required
                                 />
                                 {searchErrors.checkOutDate && (
                                     <p className="absolute -bottom-5 text-xs text-red-100">{searchErrors.checkOutDate}</p>
                                 )}
                             </div>
-
-                            {/* Total Persons */}
                             <div className="relative">
                                 <input
                                     type="number"
@@ -250,8 +284,6 @@ const Booking = () => {
                                     <p className="absolute -bottom-5 text-xs text-red-100">{searchErrors.totalPersons}</p>
                                 )}
                             </div>
-
-                            {/* Search Button */}
                             <button
                                 type="submit"
                                 className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-4 py-3 rounded-lg transition-all flex items-center justify-center transform hover:scale-105"
@@ -261,11 +293,9 @@ const Booking = () => {
                             </button>
                         </form>
                     </div>
-
                     {/* Sort and Filter Options */}
-                    <div className="p-6 bg-gray-50 flex flex-wrap justify-between items-center">
+                    <div className="p-6 flex flex-wrap justify-between items-center">
                         <div className="flex items-center mb-4 md:mb-0">
-                            <span className="text-gray-700 mr-3 font-medium">Sort by:</span>
                             <div className="relative">
                                 <select
                                     name="sortOption"
@@ -273,7 +303,7 @@ const Booking = () => {
                                     value={searchParams.sortOption}
                                     onChange={handleInputChange}
                                 >
-                                    <option value="">Recommended</option>
+                                    <option value="">sort by</option>
                                     <option value="price-high-low">Price (High to Low)</option>
                                     <option value="price-low-high">Price (Low to High)</option>
                                     <option value="rating-high-low">Rating (High to Low)</option>
@@ -283,7 +313,6 @@ const Booking = () => {
                         </div>
 
                         <div className="flex items-center">
-                            <span className="text-gray-700 mr-3 font-medium">Filter by:</span>
                             <div className="relative">
                                 <select
                                     name="roomTypeFilter"
