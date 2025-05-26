@@ -38,6 +38,7 @@ const UserManagement = () => {
     }
     const handleDeleteUser = (user) => {
         const userId = user._id;
+
         console.log("Deleting user:", userId);
         Swal.fire({
             title: 'Are you sure?',
@@ -53,6 +54,7 @@ const UserManagement = () => {
                     .then(res => {
                         if (res.data.deletedCount > 0) {
                             refetch();
+
                             Swal.fire(
                                 'Deleted!',
                                 `${user.name} has been deleted.`,

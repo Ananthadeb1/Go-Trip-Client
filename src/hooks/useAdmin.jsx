@@ -1,9 +1,11 @@
+
 import useAuth from './useAuth';
 import useAxiosSecure from './useAxiosSecure';
 import { useQuery } from '@tanstack/react-query';
 
 const useAdmin = () => {
     const { user } = useAuth();
+
     const axiosSecure = useAxiosSecure(); // Ensure axiosSecure is configured to include the token
 
     const { data: isAdmin } = useQuery({

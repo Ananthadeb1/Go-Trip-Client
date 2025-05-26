@@ -19,6 +19,7 @@ const SocialLogin = () => {
                     .then(() => {
                         // Manually update the user in context
                         const userInfo = {
+                            uid: loggedUser.uid,
                             name: loggedUser.displayName,
                             email: loggedUser.email,
                             image: loggedUser.photoURL

@@ -2,12 +2,15 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import SocialLogin from '../Shared/ScoialLogin/SocialLogin';
 import useAuth from '../../hooks/useAuth';
 import { useState } from 'react';
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 
 const Login = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [errors, setErrors] = useState({ email: '', password: '', general: '' });
+    const [showPassword, setShowPassword] = useState(false);
 
     const from = location.state?.from?.pathname || "/";
 
@@ -61,7 +64,22 @@ const Login = () => {
                     </div>
                     <div className="mb-4">
                         <label className="block text-gray-700 mb-2">Password</label>
-                        <input type="password" name="password" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Password" />
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                name="password"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 pr-12"
+                                placeholder="Password"
+                            />
+                            <button
+                                type="button"
+                                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-sm focus:outline-none"
+                                onClick={() => setShowPassword((prev) => !prev)}
+                                tabIndex={-1}
+                            >
+                                {showPassword ? <FontAwesomeIcon icon={faEyeSlash} /> : <FontAwesomeIcon icon={faEye} />}
+                            </button>
+                        </div>
                         {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
                     </div>
                     <div className="mb-4 text-right">

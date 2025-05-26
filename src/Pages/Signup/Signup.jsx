@@ -3,6 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import SocialLogin from "../Shared/ScoialLogin/SocialLogin";
 import useAxiosPublic from "../../hooks/useAxiosPublic";
 import useAuth from "../../hooks/useAuth";
+import { useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 
 const Signup = () => {
     const axiosPublic = useAxiosPublic();
@@ -43,6 +46,7 @@ const Signup = () => {
                     .then(() => {
                         console.log("User profile updated successfully");
                         const userInfo = {
+                            uid: result.user.uid,
                             name: name,
                             email: email
                         }
@@ -71,6 +75,9 @@ const Signup = () => {
             });
 
     };
+
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100 ">
@@ -104,24 +111,44 @@ const Signup = () => {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                        <input
-                            type="password"
-                            {...register("password")}
-                            name="password"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-300"
-                            placeholder="Password"
-                        />
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                {...register("password")}
+                                name="password"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-300 pr-10"
+                                placeholder="Password"
+                            />
+                            <button
+                                type="button"
+                                className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500"
+                                tabIndex={-1}
+                                onClick={() => setShowPassword((prev) => !prev)}
+                            >
+                                {showPassword ? <FontAwesomeIcon icon={faEyeSlash} /> : <FontAwesomeIcon icon={faEye} />}
+                            </button>
+                        </div>
                         {errors.password && <span className="text-red-500 text-sm">{errors.password.message}</span>}
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-                        <input
-                            type="password"
-                            {...register("confirm_password")}
-                            name="confirm_password"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-300"
-                            placeholder="Confirm Password"
-                        />
+                        <div className="relative">
+                            <input
+                                type={showConfirmPassword ? "text" : "password"}
+                                {...register("confirm_password")}
+                                name="confirm_password"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-300 pr-10"
+                                placeholder="Confirm Password"
+                            />
+                            <button
+                                type="button"
+                                className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500"
+                                tabIndex={-1}
+                                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                            >
+                                {showConfirmPassword ? <FontAwesomeIcon icon={faEyeSlash} /> : <FontAwesomeIcon icon={faEye} />}
+                            </button>
+                        </div>
                         {errors.confirm_password && <span className="text-red-500 text-sm">{errors.confirm_password.message}</span>}
                     </div>
                     <input className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 cursor-pointer" type="submit" value="Sign up" />

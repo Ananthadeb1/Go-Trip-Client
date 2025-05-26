@@ -7,10 +7,11 @@ import {
     signOut,
     signInWithPopup,
     GoogleAuthProvider,
-    updateProfile
+    updateProfile,
 } from "firebase/auth";
 import { app } from "../firebase/firebase.config";
-import useAxiosPublic from "../hooks/useAxiosPublic"; // Adjust the path as needed
+import useAxiosPublic from "../hooks/useAxiosPublic";
+import useAxiosSecure from "../hooks/useAxiosSecure";
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext(null);
@@ -21,7 +22,9 @@ const googleProvider = new GoogleAuthProvider();
 const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [loggedUser, setloggedUser] = useState(null);
     const axiosPublic = useAxiosPublic();
+    const axiosSecure = useAxiosSecure();
 
     const createUser = (email, password) => {
         setLoading(true);
@@ -50,26 +53,33 @@ const AuthProvider = ({ children }) => {
         });
     }
 
+
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, currentUser => {
+        const unsubscribe = onAuthStateChanged(auth, async currentUser => {
             setUser(currentUser);
             console.log("current user:", currentUser);
             if (currentUser) {
-                //get token and store client 68-7 ph video 5.52 second
-                axiosPublic.post('/jwt', { email: currentUser.email })
-                    .then(res => {
-                        if (res.data.token) {
-                            localStorage.setItem('access-token', res.data.token);
+                // get token and store client
+                try {
+                    const res = await axiosPublic.post('/jwt', { email: currentUser.email });
+                    if (res.data.token) {
+                        localStorage.setItem('access-token', res.data.token);
+                        const userRes = await axiosSecure.get(`/users/${currentUser.email}`);
+                        if (userRes.data) {
+                            setloggedUser(userRes.data);
                         }
-                    })
-            }
-            else {
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            } else {
                 localStorage.removeItem('access-token');
+                setloggedUser(null);
             }
             setLoading(false);
         });
         return () => {
-            return unsubscribe();
+            unsubscribe();
         };
     }, [axiosPublic]);
 
@@ -80,7 +90,8 @@ const AuthProvider = ({ children }) => {
         login,
         loginWithGoogle,
         logout,
-        updateUserProfile
+        updateUserProfile,
+        loggedUser,
     };
 
     return (
