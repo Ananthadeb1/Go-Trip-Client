@@ -59,11 +59,6 @@ const VideoSection = () => {
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                 allowFullScreen
                             ></iframe>
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                <div className="bg-white/20 backdrop-blur-sm p-4 rounded-full animate-pulse">
-                                    <PlayIcon className="w-10 h-10 text-white" />
-                                </div>
-                            </div>
                         </div>
 
                         {/* Video Navigation */}
