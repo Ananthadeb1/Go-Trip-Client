@@ -45,7 +45,7 @@ const VideoSection = () => {
     };
 
     return (
-        <section className="py-20 px-6 bg-gradient-to-br from-emerald-50 to-cyan-50 overflow-hidden">
+        <section className="py-20 px-6 bg-gradient-to-br from-rose-50 to-pink-50 overflow-hidden">
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col lg:flex-row gap-12 items-center">
                     {/* Video Carousel Section */}
@@ -64,8 +64,8 @@ const VideoSection = () => {
                         {/* Video Navigation */}
                         <div className="mt-6">
                             <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-lg font-semibold text-emerald-800">Featured Adventures</h3>
-                                <span className="text-sm font-medium text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full">
+                                <h3 className="text-lg font-semibold text-[#FF2056]">Featured Adventures</h3>
+                                <span className="text-sm font-medium text-[#FF2056] bg-[#FFEAEE] px-3 py-1 rounded-full">
                                     {slides[currentSlide].location}
                                 </span>
                             </div>
@@ -73,7 +73,7 @@ const VideoSection = () => {
                             <div className="flex items-center gap-4">
                                 <button
                                     onClick={prevSlide}
-                                    className="bg-white hover:bg-emerald-100 text-emerald-600 p-3 rounded-full shadow-lg transition-all transform hover:scale-110"
+                                    className="bg-white hover:bg-[#FFEAEE] text-[#FF2056] p-3 rounded-full shadow-lg transition-all transform hover:scale-110"
                                 >
                                     <ChevronLeftIcon className="w-6 h-6" />
                                 </button>
@@ -82,7 +82,7 @@ const VideoSection = () => {
                                     {slides.map((slide, index) => (
                                         <div
                                             key={slide.id}
-                                            className={`relative flex-shrink-0 w-28 h-20 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 ${currentSlide === index ? 'ring-4 ring-emerald-400 scale-105' : 'opacity-80 hover:opacity-100'}`}
+                                            className={`relative flex-shrink-0 w-28 h-20 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 ${currentSlide === index ? 'ring-4 ring-[#FF2056] scale-105' : 'opacity-80 hover:opacity-100'}`}
                                             onClick={() => setCurrentSlide(index)}
                                         >
                                             <img
@@ -102,7 +102,7 @@ const VideoSection = () => {
 
                                 <button
                                     onClick={nextSlide}
-                                    className="bg-white hover:bg-emerald-100 text-emerald-600 p-3 rounded-full shadow-lg transition-all transform hover:scale-110"
+                                    className="bg-white hover:bg-[#FFEAEE] text-[#FF2056] p-3 rounded-full shadow-lg transition-all transform hover:scale-110"
                                 >
                                     <ChevronRightIcon className="w-6 h-6" />
                                 </button>
@@ -120,7 +120,7 @@ const VideoSection = () => {
                     >
                         <div className="space-y-8">
                             <div>
-                                <span className="inline-block mb-4 text-emerald-600 font-medium bg-emerald-100 px-4 py-1 rounded-full">
+                                <span className="inline-block mb-4 text-[#FF2056] font-medium bg-[#FFEAEE] px-4 py-1 rounded-full">
                                     Featured Destination
                                 </span>
                                 <h2 className="text-4xl md:text-5xl font-bold text-gray-800 leading-tight tracking-tight">
@@ -139,9 +139,9 @@ const VideoSection = () => {
 
                             <div className="flex flex-wrap gap-4">
                                 <motion.button
-                                    className="flex items-center gap-3 px-6 py-3 rounded-full transition-all duration-300 shadow-lg hover:shadow-emerald-200"
+                                    className="flex items-center gap-3 px-6 py-3 rounded-full transition-all duration-300 shadow-lg hover:shadow-[#FFEAEE]"
                                     style={{
-                                        backgroundColor: '#03946D',
+                                        backgroundColor: '#FF2056',
                                         color: '#fff'
                                     }}
                                     whileHover={{ scale: 1.05 }}
@@ -151,7 +151,7 @@ const VideoSection = () => {
                                     <ArrowRightIcon className="w-5 h-5" />
                                 </motion.button>
 
-                                <button className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 transition-colors group">
+                                <button className="flex items-center gap-2 text-[#FF2056] hover:text-[#E61C4D] transition-colors group">
                                     <span className="font-medium underline decoration-2 underline-offset-4">Watch Full Series</span>
                                     <PlayIcon className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                                 </button>
