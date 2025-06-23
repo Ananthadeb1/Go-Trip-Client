@@ -27,8 +27,7 @@ const UserProfile = () => {
         'Booking Status',
         'History',
         'Expense Tracking',
-        'Recommendation',
-        'Log out'
+        'Recommendation'
     ];
 
     const handleImageUpload = async (e) => {
@@ -171,7 +170,7 @@ const UserProfile = () => {
                                             className="w-full h-full object-cover"
                                             onError={(e) => {
                                                 e.target.onerror = null;
-                                                e.target.src = 'https://via.placeholder.com/150';
+                                                e.target.src = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"; // Fallback image
                                             }}
                                         />
                                     ) : (

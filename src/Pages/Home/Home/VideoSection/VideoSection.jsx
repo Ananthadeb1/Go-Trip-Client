@@ -15,7 +15,7 @@ const VideoSection = () => {
     const slides = [
         {
             id: 1,
-            videoId: 'Cn4G2lZ_g2I',
+            videoId: 'Z44fFqBQQtg',
             title: "A Simply Perfect Place\nTo Get Lost",
             description: "Treat yourself with a journey to your inner self. Visit a mystique Tibet and start your spiritual adventure. We promise, you'll enjoy every step you make.",
             location: " Bangladesh"
@@ -33,7 +33,14 @@ const VideoSection = () => {
             title: "Journey to Inner\nPeace",
             description: "Experience the serenity of ancient monasteries and the wisdom of spiritual guides.",
             location: "Cox's Bazar, Bangladesh"
-        }
+        },
+        {
+            id: 3,
+            videoId: 'YPxfs_hYOnw',
+            title: "Journey to Inner\nPeace",
+            description: "Experience the serenity of ancient monasteries and the wisdom of spiritual guides.",
+            location: "Cox's Bazar, Bangladesh"
+        },
     ];
 
     const nextSlide = () => {
