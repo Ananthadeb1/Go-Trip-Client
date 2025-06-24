@@ -14,33 +14,96 @@ const VideoSection = () => {
 
     const slides = [
         {
-            id: 1,
-            videoId: 'Z44fFqBQQtg',
-            title: "A Simply Perfect Place\nTo Get Lost",
-            description: "Treat yourself with a journey to your inner self. Visit a mystique Tibet and start your spiritual adventure. We promise, you'll enjoy every step you make.",
-            location: " Bangladesh"
+            "id": 0,
+            "videoId": "YPxfs_hYOnw",
+            "title": "Cox's Bazar Beach Paradise",
+            "description": "Experience the world's longest natural sea beach stretching over 120 kilometers. Golden sands, gentle waves, and breathtaking sunsets make this UNESCO World Heritage site a must-visit destination.",
+            "location": "Cox's Bazar, Bangladesh"
         },
         {
-            id: 2,
-            videoId: 'HZWzn9geEqY',
-            title: "Discover Hidden\nWonders",
-            description: "Explore breathtaking landscapes and cultural treasures that will transform your perspective on travel.",
-            location: "Bandarban, Bangladesh"
+            "id": 1,
+            "videoId": "YAuMCIdWjHE",
+            "title": "Sundarbans Mangrove Adventure",
+            "description": "Explore the largest mangrove forest in the world, home to the majestic Royal Bengal Tiger. Navigate through winding waterways and discover incredible biodiversity in this UNESCO World Heritage site.",
+            "location": "Sundarbans Mangrove Forest, Bangladesh"
         },
         {
-            id: 3,
-            videoId: 'YPxfs_hYOnw',
-            title: "Journey to Inner\nPeace",
-            description: "Experience the serenity of ancient monasteries and the wisdom of spiritual guides.",
-            location: "Cox's Bazar, Bangladesh"
+            "id": 2,
+            "videoId": "QHhGeWyxntI",
+            "title": "Jaflong Stone Collection",
+            "description": "Witness the unique stone collection process along the Piyain River. Crystal clear waters, rolling hills, and the fascinating sight of stone collectors make this a photographer's paradise.",
+            "location": "Jaflong, Sylhet, Bangladesh"
         },
         {
-            id: 3,
-            videoId: 'YPxfs_hYOnw',
-            title: "Journey to Inner\nPeace",
-            description: "Experience the serenity of ancient monasteries and the wisdom of spiritual guides.",
-            location: "Cox's Bazar, Bangladesh"
+            "id": 3,
+            "videoId": "k9UZl3F35qY",
+            "title": "Tanguar Haor Wetland Wonder",
+            "description": "Discover Bangladesh's second largest freshwater wetland, known as the 'Swamp Forest'. During monsoon, it transforms into a vast water body dotted with small islands and rich wildlife.",
+            "location": "Tanguar Haor, Sunamganj, Bangladesh"
         },
+        {
+            "id": 4,
+            "videoId": "JaDXA_xgSUo",
+            "title": "Kuakata Panoramic Sea Beach",
+            "description": "The only beach in Bangladesh where you can see both sunrise and sunset over the Bay of Bengal. Experience the unique blend of sea, forest, and local Rakhine culture.",
+            "location": "Kuakata, Barishal, Bangladesh"
+        },
+        {
+            "id": 5,
+            "videoId": "ePMHvmE9oKM",
+            "title": "Sajek Valley Cloud Kingdom",
+            "description": "Known as the 'Queen of Hills', Sajek offers breathtaking views above the clouds. Experience indigenous culture, misty mornings, and panoramic valley views from Bangladesh's highest peak.",
+            "location": "Sajek, Bangladesh"
+        },
+        {
+            "id": 6,
+            "videoId": "w7RiJuePDu4",
+            "title": "Rangamati Lake District",
+            "description": "Explore the largest artificial lake in Bangladesh surrounded by hills and forests. Enjoy boat rides, visit indigenous communities, and experience the serene beauty of the Chittagong Hill Tracts.",
+            "location": "Rangamati, Bangladesh"
+        },
+        {
+            "id": 7,
+            "videoId": "_GgW2Lv-hYQ",
+            "title": "Khagrachhari Hill Paradise",
+            "description": "Discover the land of hills, waterfalls, and diverse indigenous cultures. Trek through lush green hills, visit traditional villages, and enjoy the cool mountain climate.",
+            "location": "Khagrachhari, Bangladesh"
+        },
+        {
+            "id": 8,
+            "videoId": "94zx-kCBVoI",
+            "title": "Sitakunda Eco Park",
+            "description": "Experience the botanical garden and eco-park with diverse flora and fauna. Home to the Chandranath Temple and offering hiking trails through tropical forests.",
+            "location": "Sitakunda, Bangladesh"
+        },
+        {
+            "id": 9,
+            "videoId": "Dh9-DMxZdA0",
+            "title": "Saint Martin's Coral Island",
+            "description": "Bangladesh's only coral island offering pristine beaches, crystal clear waters, and vibrant marine life. Perfect for snorkeling, diving, and experiencing untouched natural beauty.",
+            "location": "Saint Martin, Bangladesh"
+        },
+        {
+            "id": 10,
+            "videoId": "vueBUA2wpFw",
+            "title": "Sreemangal Tea Capital",
+            "description": "Known as the 'Tea Capital of Bangladesh', explore endless tea gardens, experience tea processing, and visit the Lawachara National Park with its diverse wildlife.",
+            "location": "Sreemangal, Bangladesh"
+        },
+        {
+            "id": 11,
+            "videoId": "Kvaz8UW0XsQ",
+            "title": "Kaptai Lake Serenity",
+            "description": "The largest man-made lake in Bangladesh, surrounded by hills and forests. Enjoy boat cruises, visit floating restaurants, and experience the tranquil beauty of this reservoir.",
+            "location": "Kaptai Lake, Bangladesh"
+        },
+        {
+            "id": 12,
+            "videoId": "n7iX5A7z1ms",
+            "title": "Comilla Archaeological Heritage",
+            "description": "Explore ancient Buddhist ruins, archaeological sites, and historical monuments. Discover the rich cultural heritage and ancient civilization remnants of this historic region.",
+            "location": "Comilla, Bangladesh"
+        }
     ];
 
     const nextSlide = () => {

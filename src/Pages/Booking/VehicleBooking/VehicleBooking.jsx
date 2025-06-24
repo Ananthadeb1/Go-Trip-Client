@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     faBus,
     faPlane,
@@ -23,23 +23,11 @@ const locationSuggestions = [
     "Meherpur", "Magura", "Jhenaidah", "Narail", "Shariatpur",
     "Madaripur", "Gopalganj", "Munshiganj", "Manikganj", "Sherpur",
     "Netrokona", "Sunamganj", "Habiganj", "Moulvibazar", "Brahmanbaria",
-    "Chandpur", "Lakshmipur", "Noakhali", "Feni", "Cox's Bazar",
-    "Bandarban", "Khagrachari", "Rangamati", "Pirojpur", "Jhalokathi",
-    "Barguna", "Bhola", "Panchagarh", "Thakurgaon", "Nilphamari",
-    "Lalmonirhat", "Kurigram", "Gaibandha", "Joypurhat", "Naogaon",
-    "Natore", "Chapainawabganj", "Sirajganj", "Kishoreganj", "Mymensingh",
-    "Tangail", "Sherpur", "Netrokona", "Jhalokathi", "Patuakhali",
-    "Barguna", "Bhola", "Pirojpur", "Barisal", "Gopalganj",
-    "Madaripur", "Shariatpur", "Chandpur", "Lakshmipur", "Noakhali",
-    "Feni", "Brahmanbaria", "Habiganj", "Sunamganj", "Moulvibazar",
-    "Sylhet", "Narsingdi", "Gazipur", "Narayanganj", "Munshiganj",
-    "Manikganj", "Dhaka", "Faridpur", "Kishoreganj", "Tangail",
-    "Pabna", "Sirajganj", "Rajbari", "Kushtia", "Chuadanga",
-    "Meherpur", "Magura", "Jhenaidah", "Narail", "Jessore",
-    "Satkhira", "Khulna", "Bagerhat", "Barisal", "Rangpur",
-    "Dinajpur", "Thakurgaon", "Panchagarh", "Nilphamari", "Lalmonirhat",
+    "Chandpur", "Lakshmipur", "Noakhali", "Feni", "Bandarban",
+    "Khagrachari", "Rangamati", "Pirojpur", "Jhalokathi", "Barguna",
+    "Bhola", "Panchagarh", "Thakurgaon", "Nilphamari", "Lalmonirhat",
     "Kurigram", "Gaibandha", "Joypurhat", "Naogaon", "Natore",
-    "Rajshahi", "Chapainawabganj", "Bandarban", "Khagrachari", "Rangamati",
+    "Chapainawabganj", "Sirajganj", "Kishoreganj", "Rajbari",
     "DAC (Hazrat Shahjalal Intl)", "CGP (Shah Amanat Intl)",
     "ZYL (Osmany Intl)", "JSR (Jessore)", "RJH (Rajshahi)"
 ];
@@ -51,12 +39,12 @@ const vehicleData = {
             operator: "Green Line",
             type: "AC Business Class",
             departure: { time: "08:00 AM", location: "Dhaka" },
-            arrival: { time: "02:00 PM", location: "Cox's Bazar" },
-            duration: "6h",
-            price: 1200,
+            arrival: { time: "11:30 AM", location: "Kishoreganj" },
+            duration: "3h 30m",
+            price: 800,
             seats: [
                 { id: "A1", status: "available" },
-                { id: "A2", status: "booked" },
+                { id: "A2", status: "available" },
                 { id: "A3", status: "available" },
                 { id: "B1", status: "available" },
                 { id: "B2", status: "booked" },
@@ -68,55 +56,59 @@ const vehicleData = {
         {
             id: "bus2",
             operator: "Shohagh Paribahan",
-            type: "AC Sleeper",
-            departure: { time: "10:00 PM", location: "Dhaka" },
-            arrival: { time: "05:00 AM", location: "Chittagong" },
-            duration: "7h",
-            price: 1500,
+            type: "Non-AC",
+            departure: { time: "10:00 AM", location: "Dhaka" },
+            arrival: { time: "01:30 PM", location: "Kishoreganj" },
+            duration: "3h 30m",
+            price: 500,
             seats: [
                 { id: "S1", status: "available" },
-                { id: "S2", status: "booked" },
+                { id: "S2", status: "available" },
                 { id: "S3", status: "available" },
+                { id: "S4", status: "booked" },
             ],
-            amenities: ["AC", "Sleeper", "Blanket", "Water"],
+            amenities: ["Reclining Seats", "Water"],
             image: "https://example.com/bus2.jpg"
+        },
+        {
+            id: "bus3",
+            operator: "Hanif Enterprise",
+            type: "AC Business Class",
+            departure: { time: "02:00 PM", location: "Dhaka" },
+            arrival: { time: "05:30 PM", location: "Kishoreganj" },
+            duration: "3h 30m",
+            price: 900,
+            seats: [
+                { id: "C1", status: "available" },
+                { id: "C2", status: "available" },
+                { id: "C3", status: "booked" },
+                { id: "D1", status: "available" },
+                { id: "D2", status: "available" },
+            ],
+            amenities: ["AC", "Reclining Seats", "TV", "Water", "Snacks"],
+            image: "https://example.com/bus3.jpg"
+        },
+        {
+            id: "bus4",
+            operator: "Ena Transport",
+            type: "Non-AC",
+            departure: { time: "06:00 PM", location: "Dhaka" },
+            arrival: { time: "09:30 PM", location: "Kishoreganj" },
+            duration: "3h 30m",
+            price: 550,
+            seats: [
+                { id: "E1", status: "available" },
+                { id: "E2", status: "available" },
+                { id: "E3", status: "available" },
+                { id: "F1", status: "available" },
+                { id: "F2", status: "booked" },
+            ],
+            amenities: ["Reclining Seats", "Water"],
+            image: "https://example.com/bus4.jpg"
         }
     ],
     flights: [
-        {
-            id: "flight1",
-            airline: "Biman Bangladesh",
-            flightNo: "BG101",
-            departure: { time: "07:30 AM", location: "DAC", terminal: "Terminal 1" },
-            arrival: { time: "08:45 AM", location: "CGP", terminal: "Main Terminal" },
-            duration: "1h 15m",
-            price: 4500,
-            seats: [
-                { id: "1A", status: "available" },
-                { id: "1B", status: "available" },
-                { id: "1C", status: "booked" },
-                { id: "2A", status: "available" },
-                { id: "2B", status: "booked" },
-            ],
-            amenities: ["Meal", "20kg Baggage", "Entertainment"],
-            image: "https://example.com/biman.jpg"
-        },
-        {
-            id: "flight2",
-            airline: "US-Bangla Airlines",
-            flightNo: "BS123",
-            departure: { time: "03:00 PM", location: "DAC", terminal: "Terminal 1" },
-            arrival: { time: "04:15 PM", location: "ZYL", terminal: "Main Terminal" },
-            duration: "1h 15m",
-            price: 5000,
-            seats: [
-                { id: "3A", status: "available" },
-                { id: "3B", status: "available" },
-                { id: "3C", status: "booked" },
-            ],
-            amenities: ["Meal", "25kg Baggage", "Entertainment"],
-            image: "https://example.com/usbangla.jpg"
-        }
+        // ... (keep the existing flight data)
     ]
 };
 
@@ -137,6 +129,14 @@ const VehicleBooking = () => {
     const [showToSuggestions, setShowToSuggestions] = useState(false);
     const [favoriteSearches, setFavoriteSearches] = useState([]);
     const [noResults, setNoResults] = useState(false);
+    const [filteredVehicles, setFilteredVehicles] = useState([]);
+    const [searchTriggered, setSearchTriggered] = useState(false);
+
+    // Refs for suggestion dropdowns
+    const fromInputRef = useRef(null);
+    const toInputRef = useRef(null);
+    const fromSuggestionsRef = useRef(null);
+    const toSuggestionsRef = useRef(null);
 
     // Load favorite searches from localStorage on component mount
     useEffect(() => {
@@ -144,6 +144,12 @@ const VehicleBooking = () => {
         if (savedFavorites) {
             setFavoriteSearches(JSON.parse(savedFavorites));
         }
+
+        // Add click outside listeners
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
     }, []);
 
     // Save favorite searches to localStorage when they change
@@ -151,23 +157,72 @@ const VehicleBooking = () => {
         localStorage.setItem('favoriteSearches', JSON.stringify(favoriteSearches));
     }, [favoriteSearches]);
 
-    const filteredVehicles = searchParams.vehicleType === "bus"
-        ? vehicleData.buses.filter(v =>
-            v.departure.location.toLowerCase().includes(searchParams.from.toLowerCase()) &&
-            v.arrival.location.toLowerCase().includes(searchParams.to.toLowerCase()))
-        : vehicleData.flights.filter(v =>
-            v.departure.location.toLowerCase().includes(searchParams.from.toLowerCase()) &&
-            v.arrival.location.toLowerCase().includes(searchParams.to.toLowerCase()));
+    // Filter vehicles when search is triggered
+    useEffect(() => {
+        if (searchTriggered) {
+            const filtered = searchParams.vehicleType === "bus"
+                ? vehicleData.buses.filter(v =>
+                    v.departure.location.toLowerCase().includes(searchParams.from.toLowerCase()) &&
+                    v.arrival.location.toLowerCase().includes(searchParams.to.toLowerCase()))
+                : vehicleData.flights.filter(v =>
+                    v.departure.location.toLowerCase().includes(searchParams.from.toLowerCase()) &&
+                    v.arrival.location.toLowerCase().includes(searchParams.to.toLowerCase()));
+
+            setFilteredVehicles(filtered);
+            setSearchTriggered(false);
+        }
+    }, [searchTriggered, searchParams]);
+
+    // Handle clicks outside suggestion boxes
+    const handleClickOutside = (event) => {
+        if (fromSuggestionsRef.current && !fromSuggestionsRef.current.contains(event.target) &&
+            fromInputRef.current && !fromInputRef.current.contains(event.target)) {
+            setShowFromSuggestions(false);
+        }
+        if (toSuggestionsRef.current && !toSuggestionsRef.current.contains(event.target) &&
+            toInputRef.current && !toInputRef.current.contains(event.target)) {
+            setShowToSuggestions(false);
+        }
+    };
 
     const handleSearch = (e) => {
         e.preventDefault();
-        if (filteredVehicles.length === 0) {
-            setNoResults(true);
-        } else {
-            setNoResults(false);
+        console.log("Search Params:", searchParams);
+        if (
+            searchParams.from &&
+            searchParams.to &&
+            searchParams.date &&
+            new Date(searchParams.date) >= new Date() &&
+            searchParams.passengers > 0
+        ) {
             setStep(2);
         }
+
+        // Validate date
+        if (!searchParams.date || new Date(searchParams.date) < new Date()) {
+            alert('Please select a valid future date');
+            return;
+        }
+
+        // Validate required fields
+        if (!searchParams.from || !searchParams.to) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        setSearchTriggered(true);
     };
+
+    useEffect(() => {
+        if (filteredVehicles.length === 0 && searchTriggered === false && searchParams.from && searchParams.to) {
+            setNoResults(true);
+        } else if (filteredVehicles.length > 0) {
+            setNoResults(false);
+            setStep(2);
+            setSelectedVehicle(null);
+            setSelectedSeats([]);
+        }
+    }, [filteredVehicles, searchTriggered]);
 
     const handleSeatSelection = (seatId) => {
         if (selectedSeats.includes(seatId)) {
@@ -186,7 +241,7 @@ const VehicleBooking = () => {
 
     const handleFromInputChange = (value) => {
         setSearchParams({ ...searchParams, from: value });
-        if (value.length > 1) {
+        if (value.length > 0) {
             const filtered = locationSuggestions.filter(loc =>
                 loc.toLowerCase().includes(value.toLowerCase())
             );
@@ -200,7 +255,7 @@ const VehicleBooking = () => {
 
     const handleToInputChange = (value) => {
         setSearchParams({ ...searchParams, to: value });
-        if (value.length > 1) {
+        if (value.length > 0) {
             const filtered = locationSuggestions.filter(loc =>
                 loc.toLowerCase().includes(value.toLowerCase())
             );
@@ -213,9 +268,12 @@ const VehicleBooking = () => {
     };
 
     const selectSuggestion = (field, value) => {
-        setSearchParams({ ...searchParams, [field]: value });
+        setSearchParams(prev => ({ ...prev, [field]: value }));
         if (field === 'from') {
             setShowFromSuggestions(false);
+            if (toInputRef.current) {
+                toInputRef.current.focus();
+            }
         } else {
             setShowToSuggestions(false);
         }
@@ -235,6 +293,7 @@ const VehicleBooking = () => {
             fav.vehicleType === newFavorite.vehicleType
         )) {
             setFavoriteSearches([...favoriteSearches, newFavorite]);
+            alert('Search saved to favorites!');
         }
     };
 
@@ -282,21 +341,29 @@ const VehicleBooking = () => {
                                 <div className="relative">
                                     <FontAwesomeIcon icon={faMapMarkerAlt} className="absolute left-3 top-3 text-gray-400" />
                                     <input
+                                        ref={fromInputRef}
                                         type="text"
                                         placeholder="City or Station"
                                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF2056] focus:border-[#FF2056]"
                                         value={searchParams.from}
                                         onChange={(e) => handleFromInputChange(e.target.value)}
-                                        onFocus={() => searchParams.from.length > 1 && setShowFromSuggestions(true)}
-                                        onBlur={() => setTimeout(() => setShowFromSuggestions(false), 200)}
+                                        onFocus={() => {
+                                            if (searchParams.from.length > 0) {
+                                                setShowFromSuggestions(true);
+                                            }
+                                        }}
                                         required
                                     />
                                     {showFromSuggestions && fromSuggestions.length > 0 && (
-                                        <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                                        <ul
+                                            ref={fromSuggestionsRef}
+                                            className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
+                                        >
                                             {fromSuggestions.map((suggestion, index) => (
                                                 <li
                                                     key={index}
                                                     className="px-4 py-2 hover:bg-[#FFEAEE] cursor-pointer"
+                                                    onMouseDown={(e) => e.preventDefault()}
                                                     onClick={() => selectSuggestion('from', suggestion)}
                                                 >
                                                     {suggestion}
@@ -312,21 +379,29 @@ const VehicleBooking = () => {
                                 <div className="relative">
                                     <FontAwesomeIcon icon={faMapMarkerAlt} className="absolute left-3 top-3 text-gray-400" />
                                     <input
+                                        ref={toInputRef}
                                         type="text"
                                         placeholder="City or Station"
                                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF2056] focus:border-[#FF2056]"
                                         value={searchParams.to}
                                         onChange={(e) => handleToInputChange(e.target.value)}
-                                        onFocus={() => searchParams.to.length > 1 && setShowToSuggestions(true)}
-                                        onBlur={() => setTimeout(() => setShowToSuggestions(false), 200)}
+                                        onFocus={() => {
+                                            if (searchParams.to.length > 0) {
+                                                setShowToSuggestions(true);
+                                            }
+                                        }}
                                         required
                                     />
                                     {showToSuggestions && toSuggestions.length > 0 && (
-                                        <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                                        <ul
+                                            ref={toSuggestionsRef}
+                                            className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
+                                        >
                                             {toSuggestions.map((suggestion, index) => (
                                                 <li
                                                     key={index}
                                                     className="px-4 py-2 hover:bg-[#FFEAEE] cursor-pointer"
+                                                    onMouseDown={(e) => e.preventDefault()}
                                                     onClick={() => selectSuggestion('to', suggestion)}
                                                 >
                                                     {suggestion}
@@ -373,7 +448,10 @@ const VehicleBooking = () => {
                             <button
                                 type="button"
                                 className={`px-6 py-3 rounded-lg font-medium flex items-center ${searchParams.vehicleType === 'bus' ? 'bg-[#FF2056] text-white' : 'bg-gray-200 text-gray-700'}`}
-                                onClick={() => setSearchParams({ ...searchParams, vehicleType: 'bus' })}
+                                onClick={() => {
+                                    setSearchParams({ ...searchParams, vehicleType: 'bus' });
+                                    setFilteredVehicles([]);
+                                }}
                             >
                                 <FontAwesomeIcon icon={faBus} className="mr-2" />
                                 Bus Tickets
@@ -381,7 +459,10 @@ const VehicleBooking = () => {
                             <button
                                 type="button"
                                 className={`px-6 py-3 rounded-lg font-medium flex items-center ${searchParams.vehicleType === 'flight' ? 'bg-[#4285F4] text-white' : 'bg-gray-200 text-gray-700'}`}
-                                onClick={() => setSearchParams({ ...searchParams, vehicleType: 'flight' })}
+                                onClick={() => {
+                                    setSearchParams({ ...searchParams, vehicleType: 'flight' });
+                                    setFilteredVehicles([]);
+                                }}
                             >
                                 <FontAwesomeIcon icon={faPlane} className="mr-2" />
                                 Flight Tickets
@@ -412,12 +493,14 @@ const VehicleBooking = () => {
                                         </div>
                                         <div className="flex space-x-2">
                                             <button
+                                                type="button"
                                                 onClick={() => handleFavoriteSearch(fav)}
                                                 className="text-[#4285F4] hover:text-[#3367D6]"
                                             >
                                                 Use
                                             </button>
                                             <button
+                                                type="button"
                                                 onClick={() => removeFavorite(index)}
                                                 className="text-gray-400 hover:text-red-500"
                                             >
@@ -447,12 +530,14 @@ const VehicleBooking = () => {
                                 </p>
                                 <div className="flex justify-center space-x-4">
                                     <button
+                                        type="button"
                                         onClick={() => setStep(1)}
                                         className="px-6 py-2 border border-[#FF2056] text-[#FF2056] rounded-lg hover:bg-[#FFEAEE]"
                                     >
                                         Modify Search
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={addToFavorites}
                                         className="px-6 py-2 bg-[#4285F4] text-white rounded-lg hover:bg-[#3367D6] flex items-center"
                                     >
@@ -528,6 +613,7 @@ const VehicleBooking = () => {
                                         {selectedVehicle.seats.map(seat => (
                                             <button
                                                 key={seat.id}
+                                                type="button"
                                                 className={`p-3 rounded-lg text-center font-medium ${seat.status === 'booked'
                                                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                                     : selectedSeats.includes(seat.id)
@@ -546,6 +632,7 @@ const VehicleBooking = () => {
 
                             <div className="flex justify-between mt-8">
                                 <button
+                                    type="button"
                                     onClick={() => {
                                         setStep(1);
                                         setNoResults(false);
@@ -555,6 +642,7 @@ const VehicleBooking = () => {
                                     Back
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={() => setStep(3)}
                                     disabled={!selectedVehicle || selectedSeats.length !== searchParams.passengers}
                                     className={`px-6 py-2 rounded-lg flex items-center ${!selectedVehicle || selectedSeats.length !== searchParams.passengers
@@ -650,7 +738,10 @@ const VehicleBooking = () => {
                                     <span>BDT {calculateTotal() + Math.round(selectedVehicle.price * 0.1)}</span>
                                 </div>
 
-                                <button className="w-full mt-6 bg-[#FF2056] text-white py-3 rounded-lg hover:bg-[#E61C4D] font-medium">
+                                <button
+                                    type="button"
+                                    className="w-full mt-6 bg-[#FF2056] text-white py-3 rounded-lg hover:bg-[#E61C4D] font-medium"
+                                >
                                     Confirm & Pay
                                 </button>
                             </div>
@@ -659,14 +750,25 @@ const VehicleBooking = () => {
 
                     <div className="flex justify-between">
                         <button
+                            type="button"
                             onClick={() => setStep(2)}
                             className="px-6 py-2 border border-[#FF2056] text-[#FF2056] rounded-lg hover:bg-[#FFEAEE]"
                         >
                             Back
                         </button>
                         <button
+                            type="button"
                             onClick={() => {
-                                alert('Booking confirmed!');
+                                import('sweetalert2').then(Swal => {
+                                    Swal.default.fire({
+                                        title: 'Booking Confirmed!',
+                                        text: 'Your booking has been successfully confirmed.',
+                                        icon: 'success',
+                                        confirmButtonColor: '#FF2056'
+                                    }).then(() => {
+                                        setStep(1);
+                                    });
+                                });
                                 addToFavorites();
                             }}
                             className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
