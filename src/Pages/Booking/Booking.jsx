@@ -16,7 +16,8 @@ const Booking = () => {
         queryKey: ["hotels"],
         queryFn: async () => {
             const response = await axioxPublic.get("/hotels");
-            return response.data.hotels;
+            console.log("Fetched hotels:", response.data);
+            return response.data;
         },
     });
 
@@ -268,7 +269,7 @@ const Booking = () => {
                                 </div>
 
                                 {/* Check-in Date */}
-                                <div className="relative">
+                                <div className="relative z-50">
                                     <DatePicker
                                         selected={searchParams.checkInDate ? new Date(searchParams.checkInDate) : null}
                                         onChange={date => {
@@ -295,13 +296,24 @@ const Booking = () => {
                                         id="checkInDate"
                                         name="checkInDate"
                                         required
+                                        popperPlacement="bottom-start"
+                                        popperModifiers={[
+                                            {
+                                                name: "zIndex",
+                                                enabled: true,
+                                                phase: "write",
+                                                fn: ({ state }) => {
+                                                    state.styles.popper.zIndex = 9999;
+                                                }
+                                            }
+                                        ]}
                                     />
                                     {searchErrors.checkInDate && (
                                         <p className="absolute -bottom-5 text-xs text-red-500">{searchErrors.checkInDate}</p>
                                     )}
                                 </div>
                                 {/* checkOutDate */}
-                                <div className="relative">
+                                <div className="relative z-10">
                                     <DatePicker
                                         selected={searchParams.checkOutDate ? new Date(searchParams.checkOutDate) : null}
                                         onChange={date => {
@@ -653,7 +665,7 @@ const Booking = () => {
 
                                             <Link
                                                 to={`/hotelDetails/${hotel.id}`}
-                                                state={{ hotel, roomIndex: hotel.roomIndex, checkInDate: appliedFilters.checkInDate, checkOutDate: appliedFilters.checkOutDate, totalPersons: appliedFilters.totalPersons }}
+                                                state={{ hotels, hotel, roomIndex: hotel.roomIndex, checkInDate: appliedFilters.checkInDate, checkOutDate: appliedFilters.checkOutDate, totalPersons: appliedFilters.totalPersons }}
                                                 className="w-full block text-center bg-gradient-to-r from-[#FF2056] to-[#FF6B8B] text-white font-medium py-2 px-4 rounded-lg transition-colors hover:shadow-md hover:from-[#E61C4D] hover:to-[#FF5277]"
                                             >
                                                 View Details

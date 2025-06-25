@@ -1,10 +1,8 @@
 // File: HotelDetails/HotelDetails.jsx
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import Swal from "sweetalert2";
-import useAxiosPublic from "../../../hooks/useAxiosPublic";
 
 import HotelHeader from "./Components/HotelHeader/HotelHeader"
 import Breadcrumbs from "./Components/Breadcrumbs/Breadcrumbs";
@@ -13,13 +11,11 @@ import Tabs from "./Components/Tabs/Tabs";
 import TabContent from "./Components/TabContent/TabContent";
 import BookingCard from "./Components/BookingCard/BookingCard";
 import SimilarHotels from "./Components/SimilarHotels/SimilarHotels";
-import HotelPolicies from "./Components/HotelPolicies/HotelPolicies";
 
 const HotelDetails = () => {
     const { state } = useLocation();
-    const { hotel, roomIndex, checkInDate: initialCheckIn, checkOutDate: initialCheckOut, totalPersons: initialPersons } = state || {};
+    const { hotels, hotel, roomIndex, checkInDate: initialCheckIn, checkOutDate: initialCheckOut, totalPersons: initialPersons } = state || {};
     const navigate = useNavigate();
-    const axiosPublic = useAxiosPublic();
 
     const {
         register,
@@ -32,17 +28,14 @@ const HotelDetails = () => {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const [activeTab, setActiveTab] = useState("overview");
 
-    const { data: similarHotels } = useQuery({
-        queryKey: ["similarHotels", hotel?.location],
-        queryFn: async () => {
-            const response = await axiosPublic.get(
-                `/hotels?location=${encodeURIComponent(hotel.location)}&exclude=${hotel.id}`
-            );
-            return response.data.hotels.filter((h) => h.location === hotel.location);
-        },
-        enabled: !!hotel,
-    });
-
+    const similarHotels = hotels
+        ? hotels.filter(
+            (h) =>
+                h.id !== hotel.id &&
+                h.location === hotel.location
+        ).slice(0, 4)
+        : [];
+    console.log("similarHotels", similarHotels);
     if (!hotel) {
         navigate("/booking");
         return null;
