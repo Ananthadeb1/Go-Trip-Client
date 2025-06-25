@@ -70,42 +70,42 @@ const vehicleData = {
             amenities: ["Reclining Seats", "Water"],
             image: "https://example.com/bus2.jpg"
         },
-        {
-            id: "bus3",
-            operator: "Hanif Enterprise",
-            type: "AC Business Class",
-            departure: { time: "02:00 PM", location: "Dhaka" },
-            arrival: { time: "05:30 PM", location: "Kishoreganj" },
-            duration: "3h 30m",
-            price: 900,
-            seats: [
-                { id: "C1", status: "available" },
-                { id: "C2", status: "available" },
-                { id: "C3", status: "booked" },
-                { id: "D1", status: "available" },
-                { id: "D2", status: "available" },
-            ],
-            amenities: ["AC", "Reclining Seats", "TV", "Water", "Snacks"],
-            image: "https://example.com/bus3.jpg"
-        },
-        {
-            id: "bus4",
-            operator: "Ena Transport",
-            type: "Non-AC",
-            departure: { time: "06:00 PM", location: "Dhaka" },
-            arrival: { time: "09:30 PM", location: "Kishoreganj" },
-            duration: "3h 30m",
-            price: 550,
-            seats: [
-                { id: "E1", status: "available" },
-                { id: "E2", status: "available" },
-                { id: "E3", status: "available" },
-                { id: "F1", status: "available" },
-                { id: "F2", status: "booked" },
-            ],
-            amenities: ["Reclining Seats", "Water"],
-            image: "https://example.com/bus4.jpg"
-        }
+        // {
+        //     id: "bus3",
+        //     operator: "Hanif Enterprise",
+        //     type: "AC Business Class",
+        //     departure: { time: "02:00 PM", location: "Dhaka" },
+        //     arrival: { time: "05:30 PM", location: "Kishoreganj" },
+        //     duration: "3h 30m",
+        //     price: 900,
+        //     seats: [
+        //         { id: "C1", status: "available" },
+        //         { id: "C2", status: "available" },
+        //         { id: "C3", status: "booked" },
+        //         { id: "D1", status: "available" },
+        //         { id: "D2", status: "available" },
+        //     ],
+        //     amenities: ["AC", "Reclining Seats", "TV", "Water", "Snacks"],
+        //     image: "https://example.com/bus3.jpg"
+        // },
+        // {
+        //     id: "bus4",
+        //     operator: "Ena Transport",
+        //     type: "Non-AC",
+        //     departure: { time: "06:00 PM", location: "Dhaka" },
+        //     arrival: { time: "09:30 PM", location: "Kishoreganj" },
+        //     duration: "3h 30m",
+        //     price: 550,
+        //     seats: [
+        //         { id: "E1", status: "available" },
+        //         { id: "E2", status: "available" },
+        //         { id: "E3", status: "available" },
+        //         { id: "F1", status: "available" },
+        //         { id: "F2", status: "booked" },
+        //     ],
+        //     amenities: ["Reclining Seats", "Water"],
+        //     image: "https://example.com/bus4.jpg"
+        // }
     ],
     flights: [
         // ... (keep the existing flight data)
