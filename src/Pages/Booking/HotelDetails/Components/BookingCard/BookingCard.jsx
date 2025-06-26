@@ -20,6 +20,8 @@ const BookingCard = ({
     register,
     handleSubmit,
     hotelid,
+    hotelName,
+    hotelLocation,
 }) => {
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
     const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -62,6 +64,8 @@ const BookingCard = ({
                     hotelid={hotelid}
                     roomtype={selectedRoom.type}
                     specialRequests={specialRequests}
+                    hotelName={hotelName}
+                    hotelLocation={hotelLocation}
                 />
             )}
             {reviewModalOpen && (

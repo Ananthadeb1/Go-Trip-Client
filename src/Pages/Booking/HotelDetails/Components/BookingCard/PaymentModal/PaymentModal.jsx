@@ -23,6 +23,8 @@ const PaymentModal = ({
     hotelid,
     roomtype,
     specialRequests,
+    hotelName,
+    hotelLocation
 }) => {
     const paymentMethods = [
         {
@@ -79,6 +81,8 @@ const PaymentModal = ({
             const bookingData = {
                 userId: loggedUser.uid,
                 hotelId: hotelid,
+                hotelName: hotelName,
+                hotelLocation: hotelLocation,
                 type: 'hotel',
                 roomType: roomtype,
                 startDate: startDate.toISOString(),

@@ -204,7 +204,7 @@ const Booking = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-r from-rose-50 to-indigo-50 py-8">
+        <div className="min-h-screen py-8">
             <motion.div
                 initial="hidden"
                 animate="show"
@@ -269,7 +269,7 @@ const Booking = () => {
                                 </div>
 
                                 {/* Check-in Date */}
-                                <div className="relative z-50">
+                                <div className="relative">
                                     <DatePicker
                                         selected={searchParams.checkInDate ? new Date(searchParams.checkInDate) : null}
                                         onChange={date => {

@@ -7,8 +7,6 @@ import ProfileTab from './ProfileTab/ProfileTab';
 import BookingStatusTab from './BookingStatusTab/BookingStatusTab';
 import HistoryTab from './HistoryTab/HistoryTab';
 import ExpenseTrackingTab from './ExpenseTrackingTab/ExpenseTrackingTab';
-import RecommendationTab from './RecommendationTab/RecommendationTab';
-import PrivacyTab from './PrivacyTab/PrivacyTab';
 import useAxiosSecure from '../../hooks/useAxiosSecure';
 import { useQueryClient } from '@tanstack/react-query';
 import Swal from 'sweetalert2';
@@ -16,18 +14,18 @@ import Swal from 'sweetalert2';
 const UserProfile = () => {
     const { loggedUser, updateUser } = useAuth();
     const [activeTab, setActiveTab] = useState('Profile');
+    const [userData, setUserData] = useState(loggedUser);
+
     const fileInputRef = useRef(null);
     const axiosSecure = useAxiosSecure();
     const queryClient = useQueryClient();
 
     const tabs = [
         'Profile',
-        'Privacy',
         'Itinerary',
         'Booking Status',
         'History',
         'Expense Tracking',
-        'Recommendation'
     ];
 
     const handleImageUpload = async (e) => {
@@ -80,36 +78,49 @@ const UserProfile = () => {
     };
 
     const handleProfileUpdate = async (updateData) => {
-        try {
-            // Optimistically update UI
-            const updatedUser = { ...loggedUser, ...updateData };
-            updateUser(updatedUser);
-            queryClient.setQueryData(['user', loggedUser._id], updatedUser);
-
-            // Send to backend
-            const response = await axiosSecure.patch(`/users/${loggedUser._id}`, updateData);
-
-            // Verify update was successful
-            if (response.data.modifiedCount === 1) {
-                // Refresh data from server
-                await queryClient.invalidateQueries(['user', loggedUser._id]);
-
-                return true;
-            } else {
-                throw new Error('No documents were modified');
-            }
-        } catch (error) {
-            // Revert on error
-            updateUser(loggedUser);
-            queryClient.setQueryData(['user', loggedUser._id], loggedUser);
-
-            throw error;
-        }
+        // Use TanStack Query's mutation for updating user profile
+        const mutation = queryClient.getMutationCache().build(
+            queryClient,
+            {
+                mutationKey: ['updateUser', loggedUser._id],
+                mutationFn: async (updateData) => {
+                    const response = await axiosSecure.patch(`/users/${loggedUser._id}`, updateData);
+                    if (response.data.modifiedCount === 1) {
+                        return { ...loggedUser, ...updateData };
+                    }
+                    throw new Error('No documents were modified');
+                },
+                onMutate: async (updateData) => {
+                    // Optimistically update UI
+                    const previousUser = queryClient.getQueryData(['user', loggedUser._id]);
+                    const updatedUser = { ...loggedUser, ...updateData };
+                    updateUser(updatedUser);
+                    setUserData(updatedUser);
+                    console.log('Optimistically updating user data:', userData);
+                    queryClient.setQueryData(['user', loggedUser._id], updatedUser);
+                    return { previousUser };
+                },
+                onError: (error, _variables, context) => {
+                    // Revert on error
+                    updateUser(context.previousUser);
+                    setUserData(context.previousUser);
+                    queryClient.setQueryData(['user', loggedUser._id], context.previousUser);
+                },
+                onSuccess: async (data) => {
+                    setUserData(data);
+                    await queryClient.refetchQueries({ queryKey: ['user', loggedUser._id] });
+                }
+            },
+            updateData
+        );
+        await mutation.execute(updateData);
+        return true;
     };
 
     const triggerFileInput = () => {
         fileInputRef.current.click();
     };
+
 
     const renderTabContent = () => {
         switch (activeTab) {
@@ -136,8 +147,6 @@ const UserProfile = () => {
                         }}
                     />
                 );
-            case 'Privacy':
-                return <PrivacyTab />;
             case 'Itinerary':
                 return <Itinerary trips={[]} />;
             case 'Booking Status':
@@ -146,8 +155,6 @@ const UserProfile = () => {
                 return <HistoryTab />;
             case 'Expense Tracking':
                 return <ExpenseTrackingTab />;
-            case 'Recommendation':
-                return <RecommendationTab />;
             default:
                 return null;
         }
