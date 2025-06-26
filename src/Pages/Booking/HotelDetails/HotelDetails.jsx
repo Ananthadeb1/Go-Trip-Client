@@ -11,6 +11,7 @@ import Tabs from "./Components/Tabs/Tabs";
 import TabContent from "./Components/TabContent/TabContent";
 import BookingCard from "./Components/BookingCard/BookingCard";
 import SimilarHotels from "./Components/SimilarHotels/SimilarHotels";
+import PaymentModal from "./Components/BookingCard/PaymentModal/PaymentModal";
 
 const HotelDetails = () => {
     const { state } = useLocation();
@@ -61,31 +62,25 @@ const HotelDetails = () => {
         ? selectedRoom.pricePerNight * (1 - selectedRoom.discountPercentage / 100) * nights * guests
         : selectedRoom.pricePerNight * nights * guests;
 
-    const onSubmit = async (data) => {
+    const onSubmit = async () => {
         if (!startDate || !endDate) {
             Swal.fire({ icon: "error", title: "Oops...", text: "Please select check-in and check-out dates" });
             return;
         }
 
-        const bookingData = {
-            hotelId: hotel.id,
-            roomId: selectedRoom.id,
-            checkInDate: startDate.toISOString(),
-            checkOutDate: endDate.toISOString(),
-            guests,
-            totalPrice: Math.round(totalPrice),
-            specialRequests: data.specialRequests,
-            status: "confirmed",
-        };
+        // const bookingData = {
+        //     hotelId: hotel.id,
+        //     roomId: selectedRoom.id,
+        //     checkInDate: startDate.toISOString(),
+        //     checkOutDate: endDate.toISOString(),
+        //     guests,
+        //     totalPrice: Math.round(totalPrice),
+        //     specialRequests: data.specialRequests,
+        //     status: "confirmed",
+        // };
 
         try {
-            console.log("Booking data:", bookingData);
-            Swal.fire({
-                title: "Booking Successful!",
-                text: `Your booking at ${hotel.name} has been confirmed.`,
-                icon: "success",
-                confirmButtonText: "View Bookings",
-            }).then(() => navigate("/my-bookings"));
+            <PaymentModal />
         } catch (error) {
             Swal.fire({ icon: "error", title: "Booking Failed", text: error.message });
         }
@@ -102,7 +97,7 @@ const HotelDetails = () => {
     };
 
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 bg-gradient-to-r from-[#FEF0F2] to-[#EEF2FF]">
             <Breadcrumbs hotel={hotel} navigate={navigate} />
             <HotelHeader hotel={hotel} averageRating={averageRating} />
             <div className="flex flex-col lg:flex-row gap-8">
@@ -140,6 +135,7 @@ const HotelDetails = () => {
                         guests={guests}
                         nights={nights}
                         totalPrice={totalPrice}
+                        hotelid={hotel.id}
                         handleStartDateChange={handleStartDateChange}
                         handleEndDateChange={handleEndDateChange}
                         setGuests={setGuests}

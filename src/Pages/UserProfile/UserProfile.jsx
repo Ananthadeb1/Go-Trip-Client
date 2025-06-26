@@ -154,7 +154,7 @@ const UserProfile = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-r from-rose-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen  py-8 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Left Sidebar - Navigation with Profile */}

@@ -5,7 +5,7 @@ import NavBar from '../Pages/Shared/NavBar/NavBar';
 
 const Main = () => {
     return (
-        <div className='bg-white min-h-screen text-black'>
+        <div className='bg-gradient-to-r from-[#FEF0F2] to-[#EEF2FF] min-h-screen text-black'>
             <NavBar></NavBar>
             <Outlet></Outlet>
             <Footer></Footer>

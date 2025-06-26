@@ -42,7 +42,7 @@ const Booking = () => {
     });
 
     if (isLoading) return (
-        <div className="flex justify-center items-center h-screen bg-gradient-to-br from-[#FFF5F7] to-[#FFEAEE]">
+        <div className="flex justify-center items-center h-screen ">
             <div className="animate-pulse flex flex-col items-center">
                 <div className="h-16 w-16 bg-[#FF2056] rounded-full mb-4"></div>
                 <p className="text-[#FF2056] font-medium">Loading amazing stays...</p>

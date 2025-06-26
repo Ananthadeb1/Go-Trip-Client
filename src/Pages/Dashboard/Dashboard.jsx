@@ -32,7 +32,7 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="flex flex-col md:flex-row min-h-screen bg-gradient-to-r from-rose-50 to-indigo-50">
+        <div className="flex flex-col md:flex-row min-h-screen ">
             {/* Mobile Sidebar Toggle */}
             <button
                 className="md:hidden fixed top-4 left-4 z-30 p-3 rounded-lg bg-[#FF2056] text-white shadow-lg"
