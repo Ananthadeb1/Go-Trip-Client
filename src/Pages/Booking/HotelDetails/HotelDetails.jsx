@@ -138,6 +138,7 @@ const HotelDetails = () => {
                         hotelid={hotel.id}
                         hotelName={hotel.name}
                         hotelLocation={hotel.location}
+                        roomtype={selectedRoom.roomType}
                         handleStartDateChange={handleStartDateChange}
                         handleEndDateChange={handleEndDateChange}
                         setGuests={setGuests}

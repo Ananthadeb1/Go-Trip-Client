@@ -66,6 +66,7 @@ const BookingCard = ({
                     specialRequests={specialRequests}
                     hotelName={hotelName}
                     hotelLocation={hotelLocation}
+                    type="hotel"
                 />
             )}
             {reviewModalOpen && (

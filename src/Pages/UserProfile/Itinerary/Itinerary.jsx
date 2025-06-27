@@ -1,281 +1,347 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaSave, FaStop, FaUndo } from 'react-icons/fa';
+import useAxiosPublic from '../../../hooks/useAxiosPublic';
+import useAuth from '../../../hooks/useAuth';
 
-const Itinerary = () => {
-    const [prompt, setPrompt] = useState('');
-    const [conversation, setConversation] = useState([]);
+const ItineraryGenerator = () => {
+    // State for form inputs
+    const [location, setLocation] = useState('');
+    const [days, setDays] = useState(2);
+    const axiosPublic = useAxiosPublic();
+    const { loggedUser } = useAuth();
+
+    // State for API interaction
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
-    const messagesEndRef = useRef(null);
+    const [abortController, setAbortController] = useState(null);
 
-    // Auto-scroll to bottom when messages change
+    // State for itinerary data
+    const [itineraryData, setItineraryData] = useState(null);
+    const [existingItinerary, setExistingItinerary] = useState(null);
+    const [previousItinerary, setPreviousItinerary] = useState(null);
+
+    // Color theme
+    const colors = {
+        primary: '#EC003F',
+        secondary: '#FF6B8B',
+        accent: '#FFA500',
+        background: '#FFF5F7',
+        text: '#333333'
+    };
+
+    // Ref for top of results section
+    const resultsRef = useRef(null);
+
+    // Load existing itinerary on component mount
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [conversation]);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        if (!prompt.trim() || isLoading) return;
-        setError(null);
-
-        // Add user message with pending state
-        const userMessage = {
-            id: Date.now(),
-            role: 'user',
-            content: prompt,
-            timestamp: new Date().toISOString(),
-            status: 'sending'
+        const fetchExistingItinerary = async () => {
+            try {
+                const response = await axiosPublic.get(`/itineraries/${loggedUser.uid}`);
+                if (response.data) {
+                    setExistingItinerary(response.data);
+                    setLocation(response.data.location);
+                    setDays(response.data.days);
+                    setItineraryData(response.data.itinerary);
+                }
+            } catch (error) {
+                console.log('No existing itinerary found,', error);
+            }
         };
 
-        setConversation(prev => [...prev, userMessage]);
-        setPrompt('');
-        setIsLoading(true);
+        if (loggedUser?.uid) {
+            fetchExistingItinerary();
+        }
+    }, [loggedUser?.uid, axiosPublic]);
 
-        try {
-            // Format messages for OpenRouter API
-            const messages = [
-                ...conversation
-                    .filter(msg => msg.status !== 'error')
-                    .map(({ role, content }) => ({ role, content })),
-                { role: 'user', content: prompt }
-            ];
-
-            const response = await axios.post(
-                'https://openrouter.ai/api/v1/chat/completions',
-                {
-                    model: "deepseek/deepseek-chat", // or "deepseek/deepseek-r1:free"
-                    messages,
-                    temperature: 0.7
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-                        'HTTP-Referer': window.location.href,
-                        'X-Title': 'My AI App',
-                        'Content-Type': 'application/json'
-                    },
-                    timeout: 60000 // 60 second timeout
-                }
-            );
-
-            const aiMessage = {
-                id: Date.now() + 1,
-                role: 'assistant',
-                content: response.data.choices[0]?.message?.content || 'No response content',
-                timestamp: new Date().toISOString(),
-                status: 'received'
-            };
-
-            // Update conversation with successful response
-            setConversation(prev =>
-                prev.map(msg =>
-                    msg.id === userMessage.id
-                        ? { ...msg, status: 'sent' }
-                        : msg
-                ).concat(aiMessage)
-            );
-        } catch (error) {
-            console.error('API Error:', error);
-
-            const errorMessage = {
-                id: Date.now() + 1,
-                role: 'assistant',
-                content: getErrorMessage(error),
-                timestamp: new Date().toISOString(),
-                status: 'error'
-            };
-
-            setConversation(prev =>
-                prev.map(msg =>
-                    msg.id === userMessage.id
-                        ? { ...msg, status: 'error' }
-                        : msg
-                ).concat(errorMessage)
-            );
-            setError(error.response?.data?.error?.message || error.message);
-        } finally {
+    // Stop generation function
+    const stopGeneration = () => {
+        if (abortController) {
+            abortController.abort();
             setIsLoading(false);
+            setError('Generation stopped by user');
         }
     };
 
-    const getErrorMessage = (error) => {
-        if (error.response) {
-            switch (error.response.status) {
-                case 400: return 'Invalid request. Please rephrase your message.';
-                case 401: return 'API key issue. Please contact support.';
-                case 402: return 'Payment required. This model requires credits.';
-                case 429: return 'Rate limit exceeded. Please wait before trying again.';
-                case 502: return 'Bad gateway. The AI service may be down.';
-                default: return `Error: ${error.response.data?.error?.message || 'Unknown API error'}`;
-            }
+    // Restore previous itinerary
+    const restorePreviousItinerary = () => {
+        if (previousItinerary) {
+            setItineraryData(previousItinerary.itinerary);
+            setLocation(previousItinerary.location);
+            setDays(previousItinerary.days);
+            setExistingItinerary(previousItinerary);
+            setPreviousItinerary(null);
         }
-        return error.message || 'Network error. Please check your connection.';
     };
 
-    const retryMessage = async (messageId) => {
-        const messageToRetry = conversation.find(msg => msg.id === messageId);
-        if (!messageToRetry || messageToRetry.role !== 'assistant' || messageToRetry.status !== 'error') return;
-
-        setIsLoading(true);
+    // Extract JSON from API response
+    const extractJsonFromResponse = (response) => {
         try {
-            // Get all messages up to the error
-            const contextMessages = conversation
-                .slice(0, conversation.findIndex(msg => msg.id === messageId))
-                .filter(msg => msg.status !== 'error')
-                .map(({ role, content }) => ({ role, content }));
+            const codeBlockRegex = /```json\n([\s\S]*?)\n```/;
+            const match = response.match(codeBlockRegex);
+            if (match && match[1]) {
+                return JSON.parse(match[1]);
+            }
+            return JSON.parse(response);
+        } catch (e) {
+            console.error("Failed to parse JSON:", e);
+            return null;
+        }
+    };
 
+    // Save itinerary to database
+    const saveItinerary = async () => {
+        try {
+            await axiosPublic.patch(`/itineraries/${loggedUser.uid}`, {
+                userId: loggedUser.uid,
+                location,
+                days,
+                itinerary: itineraryData,
+                updatedAt: new Date().toISOString()
+            });
+            setExistingItinerary({
+                location,
+                days,
+                itinerary: itineraryData
+            });
+            setPreviousItinerary(null);
+        } catch (error) {
+            console.error('Save failed:', error);
+            setError('Failed to save itinerary');
+        }
+    };
+
+    // Generate new itinerary
+    const generateItinerary = async (e) => {
+        e.preventDefault();
+        if (!location.trim() || isLoading) return;
+
+        const controller = new AbortController();
+        setAbortController(controller);
+        setPreviousItinerary(existingItinerary);
+        setIsLoading(true);
+        setError(null);
+
+        try {
             const response = await axios.post(
                 'https://openrouter.ai/api/v1/chat/completions',
                 {
                     model: "deepseek/deepseek-chat",
-                    messages: contextMessages,
+                    messages: [{
+                        role: "user",
+                        content: `Create a ${days}-day itinerary for ${location}, Bangladesh in JSON format. Structure: { itinerary: { day1: { morning: { activity, description, duration, location }, ... } }`
+                    }],
                     temperature: 0.7
                 },
                 {
                     headers: {
                         'Authorization': `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    signal: controller.signal
                 }
             );
 
-            setConversation(prev =>
-                prev.map(msg =>
-                    msg.id === messageId
-                        ? {
-                            ...msg,
-                            content: response.data.choices[0]?.message?.content,
-                            status: 'received',
-                            timestamp: new Date().toISOString()
-                        }
-                        : msg
-                )
-            );
+            const content = response.data.choices[0]?.message?.content || '';
+            const parsedData = extractJsonFromResponse(content);
+
+            if (parsedData) {
+                setItineraryData(parsedData);
+                if (resultsRef.current) {
+                    resultsRef.current.scrollIntoView({ behavior: 'smooth' });
+                }
+            } else {
+                throw new Error('Invalid itinerary format received');
+            }
         } catch (error) {
-            console.error('Retry failed:', error);
-            setError('Retry failed: ' + getErrorMessage(error));
+            if (error.name !== 'AbortError') {
+                console.error('Generation failed:', error);
+                setError(getErrorMessage(error));
+            }
         } finally {
             setIsLoading(false);
+            setAbortController(null);
         }
     };
 
+    // Error message handler
+    const getErrorMessage = (error) => {
+        if (error.response) {
+            switch (error.response.status) {
+                case 400: return 'Invalid request';
+                case 402: return 'API service requires payment';
+                case 429: return 'Too many requests';
+                default: return error.response.data?.error?.message || 'API error';
+            }
+        }
+        return error.message || 'Network error';
+    };
+
     return (
-        <div className="chat-container">
-            <h2 className="text-xl font-bold mb-4">Itinerary Creation</h2>
-            <p className="text-gray-600">Your Itinerary settings will be displayed here.</p>
-            <div className="messages">
-                {conversation.map((message) => (
-                    <div key={message.id} className={`message ${message.role}`}>
-                        <div className={`content ${message.status}`}>
-                            {message.content}
-                            {message.status === 'error' && (
+        <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
+            <div className="max-w-6xl mx-auto p-4 md:p-8">
+                <div className="text-center mb-8">
+                    <h1 className="text-3xl font-bold mb-2" style={{ color: colors.text }}>
+                        Travel Itinerary Generator
+                    </h1>
+                    <p className="text-lg" style={{ color: colors.primary }}>
+                        Plan your perfect trip across Bangladesh
+                    </p>
+                </div>
+
+                {/* Input Form */}
+                <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+                    <form onSubmit={generateItinerary} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
+                                    Destination
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <FaMapMarkerAlt className="text-gray-400" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={location}
+                                        onChange={(e) => setLocation(e.target.value)}
+                                        placeholder="e.g. Cox's Bazar"
+                                        className="pl-10 w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                        style={{ borderColor: colors.primary }}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
+                                    Days
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <FaCalendarAlt className="text-gray-400" />
+                                    </div>
+                                    <select
+                                        value={days}
+                                        onChange={(e) => setDays(parseInt(e.target.value))}
+                                        className="pl-10 w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                        style={{ borderColor: colors.primary }}
+                                    >
+                                        {[1, 2, 3, 4, 5, 6, 7].map(num => (
+                                            <option key={num} value={num}>{num} day{num !== 1 ? 's' : ''}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="flex items-end">
                                 <button
-                                    onClick={() => retryMessage(message.id)}
-                                    className="retry-button"
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="w-full px-4 py-2 rounded-lg text-white font-medium hover:opacity-90 transition-opacity"
+                                    style={{ backgroundColor: colors.primary }}
                                 >
-                                    Retry
+                                    {isLoading ? 'Generating...' : 'Generate Itinerary'}
                                 </button>
-                            )}
+                            </div>
                         </div>
-                        <div className="timestamp">
-                            {new Date(message.timestamp).toLocaleTimeString()}
+                    </form>
+                </div>
+
+                {/* Results Section */}
+                <div ref={resultsRef}>
+                    {error && (
+                        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
+                            <p>{error}</p>
                         </div>
-                    </div>
-                ))}
-                <div ref={messagesEndRef} />
+                    )}
+
+                    {isLoading && (
+                        <div className="flex justify-center items-center p-8">
+                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2" style={{ borderColor: colors.primary }}></div>
+                            <button
+                                onClick={stopGeneration}
+                                className="ml-4 flex items-center space-x-2 px-4 py-2 rounded-lg text-white"
+                                style={{ backgroundColor: colors.accent }}
+                            >
+                                <FaStop />
+                                <span>Stop Generation</span>
+                            </button>
+                        </div>
+                    )}
+
+                    {(itineraryData || existingItinerary) && (
+                        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
+                            <div className="p-6">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-2xl font-bold" style={{ color: colors.text }}>
+                                        {location} Itinerary ({days} day{days !== 1 ? 's' : ''})
+                                    </h2>
+                                    <div className="flex space-x-2">
+                                        {previousItinerary && (
+                                            <button
+                                                onClick={restorePreviousItinerary}
+                                                className="flex items-center space-x-2 px-4 py-2 rounded-lg text-white"
+                                                style={{ backgroundColor: colors.secondary }}
+                                            >
+                                                <FaUndo />
+                                                <span>Restore Previous</span>
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={saveItinerary}
+                                            className="flex items-center space-x-2 px-4 py-2 rounded-lg text-white"
+                                            style={{ backgroundColor: colors.accent }}
+                                        >
+                                            <FaSave />
+                                            <span>Save Itinerary</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-8">
+                                    {Object.entries((itineraryData || existingItinerary.itinerary).itinerary).map(([dayKey, dayData]) => (
+                                        <div key={dayKey} className="border rounded-lg overflow-hidden">
+                                            <div className="bg-gray-50 px-4 py-3 border-b">
+                                                <h3 className="font-semibold" style={{ color: colors.primary }}>
+                                                    {dayKey.replace('day', 'Day ')}
+                                                </h3>
+                                            </div>
+                                            <div className="divide-y">
+                                                {Object.entries(dayData).map(([timeKey, timeData]) => (
+                                                    <div key={timeKey} className="p-4">
+                                                        <div className="flex items-center mb-2">
+                                                            <span className="capitalize font-medium mr-2" style={{ color: colors.secondary }}>
+                                                                {timeKey}:
+                                                            </span>
+                                                            <h4 className="font-medium" style={{ color: colors.text }}>
+                                                                {timeData.activity}
+                                                            </h4>
+                                                        </div>
+                                                        <p className="text-gray-600 mb-2">{timeData.description}</p>
+                                                        <div className="flex flex-wrap gap-4 text-sm">
+                                                            <div className="flex items-center text-gray-500">
+                                                                <FaClock className="mr-1" />
+                                                                {timeData.duration}
+                                                            </div>
+                                                            <div className="flex items-center text-gray-500">
+                                                                <FaMapMarkerAlt className="mr-1" />
+                                                                {timeData.location}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
-
-            <form onSubmit={handleSubmit} className="input-area">
-                <input
-                    type="text"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Type your message..."
-                    disabled={isLoading}
-                />
-                <button type="submit" disabled={!prompt.trim() || isLoading}>
-                    {isLoading ? 'Sending...' : 'Send'}
-                </button>
-            </form>
-
-            {error && <div className="error-message">{error}</div>}
         </div>
     );
 };
 
-export default Itinerary;
-
-//     return (
-//         <div className="flex flex-col h-screen max-w-3xl mx-auto p-4 bg-gray-50">
-//             <header className="py-4 border-b border-gray-200">
-//                 <h1 className="text-2xl font-bold text-center text-blue-600">DeepSeek Chat</h1>
-//             </header>
-
-//             <div className="flex-1 overflow-y-auto py-4 space-y-4">
-//                 {conversation.map((msg, index) => (
-//                     <div
-//                         key={index}
-//                         className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-//                     >
-//                         <div
-//                             className={`max-w-xs md:max-w-md lg:max-w-lg rounded-lg px-4 py-2 ${msg.sender === 'user'
-//                                 ? 'bg-blue-500 text-white'
-//                                 : 'bg-gray-200 text-gray-800'
-//                                 }`}
-//                         >
-//                             <p className="whitespace-pre-wrap">{msg.text}</p>
-//                         </div>
-//                     </div>
-//                 ))}
-
-//                 {isLoading && (
-//                     <div className="flex justify-start">
-//                         <div className="bg-gray-200 text-gray-800 rounded-lg px-4 py-2 max-w-xs">
-//                             <div className="flex space-x-2">
-//                                 <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce"></div>
-//                                 <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce delay-100"></div>
-//                                 <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce delay-200"></div>
-//                             </div>
-//                         </div>
-//                     </div>
-//                 )}
-
-//                 <div ref={messagesEndRef} />
-//             </div>
-
-//             <form onSubmit={handleSubmit} className="mt-4">
-//                 <div className="flex space-x-2">
-//                     <textarea
-//                         value={prompt}
-//                         onChange={(e) => setPrompt(e.target.value)}
-//                         placeholder="Type your message here..."
-//                         className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-//                         rows={3}
-//                         disabled={isLoading}
-//                     />
-//                     <button
-//                         type="submit"
-//                         disabled={!prompt.trim() || isLoading}
-//                         className={`px-4 py-2 rounded-lg text-white font-medium ${(!prompt.trim() || isLoading)
-//                             ? 'bg-gray-400 cursor-not-allowed'
-//                             : 'bg-blue-600 hover:bg-blue-700'
-//                             }`}
-//                     >
-//                         {isLoading ? (
-//                             <span className="flex items-center">
-//                                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-//                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-//                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-//                                 </svg>
-//                                 Sending
-//                             </span>
-//                         ) : 'Send'}
-//                     </button>
-//                 </div>
-//             </form>
-//         </div>
-//     );
-// };
-
-// export default DeepSeekChat;
+export default ItineraryGenerator;

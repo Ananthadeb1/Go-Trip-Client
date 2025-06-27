@@ -20,11 +20,24 @@ const PaymentModal = ({
     totalPrice,
     selectedRoom,
     startDate,
+    endDate,
     hotelid,
+    type,
     roomtype,
     specialRequests,
     hotelName,
-    hotelLocation
+    hotelLocation,
+
+    vehicleId,
+    from,
+    dest,
+    passengers,
+    selectedSeats,
+    vehicleName,
+    vehicleType,
+    journeyDate,
+    favoriteSearches
+
 }) => {
     const paymentMethods = [
         {
@@ -78,23 +91,45 @@ const PaymentModal = ({
 
     const handlePaymentSuccess = async (paymentResult) => {
         try {
-            const bookingData = {
-                userId: loggedUser.uid,
-                hotelId: hotelid,
-                hotelName: hotelName,
-                hotelLocation: hotelLocation,
-                type: 'hotel',
-                roomType: roomtype,
-                startDate: startDate.toISOString(),
-                nights,
-                guests,
-                totalPrice,
-                paymentMethod: paymentResult.paymentMethod,
-                transactionId: paymentResult.transactionId,
-                bookingTime: new Date().toISOString(),
-                status: 'confirmed',
-                specialRequests: specialRequests || '',
-            };
+
+            const bookingData = {};
+
+            if (type === 'hotel') {
+                bookingData.userId = loggedUser.uid;
+                bookingData.hotelId = hotelid;
+                bookingData.hotelName = hotelName;
+                bookingData.hotelLocation = hotelLocation;
+                bookingData.type = type;
+                bookingData.roomType = roomtype;
+                bookingData.startDate = startDate.toISOString();
+                bookingData.endDate = endDate.toISOString();
+                bookingData.nights = nights;
+                bookingData.guests = guests;
+                bookingData.totalCost = totalPrice;
+                bookingData.paymentMethod = paymentResult.paymentMethod;
+                bookingData.transactionId = paymentResult.transactionId;
+                bookingData.bookingTime = new Date().toISOString();
+                bookingData.status = 'confirmed';
+                bookingData.specialRequests = specialRequests || '';
+            }
+            else if (type === 'bus' || type === 'train') {
+                bookingData.userId = loggedUser.uid;
+                bookingData.vehicleId = vehicleId;
+                bookingData.vehicleName = vehicleName;
+                bookingData.vehicleType = vehicleType;
+                bookingData.type = type;
+                bookingData.from = from;
+                bookingData.dest = dest;
+                bookingData.journeyDate = new Date(journeyDate).toISOString(); // ✅ Fixed
+                bookingData.passengers = passengers;
+                bookingData.selectedSeats = selectedSeats;
+                bookingData.totalCost = totalPrice;
+                bookingData.paymentMethod = paymentResult.paymentMethod;
+                bookingData.transactionId = paymentResult.transactionId;
+                bookingData.bookingTime = new Date().toISOString();
+                bookingData.favoriteSearches = favoriteSearches;
+                bookingData.status = 'confirmed';
+            }
 
             await AxiosSecure.post('/bookings', bookingData);
 

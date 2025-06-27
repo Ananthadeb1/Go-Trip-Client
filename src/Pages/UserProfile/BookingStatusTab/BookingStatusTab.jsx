@@ -99,13 +99,13 @@ const BookingStatusTab = () => {
                     <>
                         <div className="flex items-center gap-2">
                             <MapPinIcon className="h-4 w-4 text-gray-500" />
-                            <span>{booking.location}</span>
+                            <span>{booking.hotelLocation}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <CalendarIcon className="h-4 w-4 text-gray-500" />
                             <span>
-                                {new Date(booking.checkIn).toLocaleDateString()} - {new Date(booking.checkOut).toLocaleDateString()}
-                                ({Math.ceil((new Date(booking.checkOut) - new Date(booking.checkIn)) / (1000 * 60 * 60 * 24))} nights)
+                                {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
+                                ({booking.nights} nights)
                             </span>
                         </div>
                     </>
@@ -116,11 +116,11 @@ const BookingStatusTab = () => {
                     <>
                         <div className="flex items-center gap-2">
                             <ArrowsRightLeftIcon className="h-4 w-4 text-gray-500" />
-                            <span>{booking.from} → {booking.to}</span>
+                            <span>{booking.from} → {booking.dest}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <CalendarIcon className="h-4 w-4 text-gray-500" />
-                            <span>{new Date(booking.departure).toLocaleString()}</span>
+                            <span>{new Date(booking.journeyDate).toLocaleString()}</span>
                         </div>
                     </>
                 );
@@ -172,12 +172,6 @@ const BookingStatusTab = () => {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
                 {bookings.map(booking => {
-                    // Calculate departureDate if booking has startDate and nights
-                    let departureDate;
-                    if (booking.startDate && booking.nights) {
-                        const start = new Date(booking.startDate);
-                        departureDate = new Date(start.getTime() + booking.nights * 24 * 60 * 60 * 1000);
-                    }
 
                     return (
                         <div key={booking._id} className="border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
@@ -187,7 +181,7 @@ const BookingStatusTab = () => {
                                         {renderBookingIcon(booking.type)}
                                         <div>
                                             <h3 className="font-semibold text-gray-800 capitalize">
-                                                {booking.type} Booking
+                                                {booking.type === 'hotel' ? booking.hotelName : booking.type === 'bus' ? booking.vehicleName : 'Other'} Booking
                                             </h3>
                                             <p className="text-sm text-gray-500">
                                                 Booking ID: {booking._id.slice(-8).toUpperCase()}
@@ -212,7 +206,7 @@ const BookingStatusTab = () => {
 
                                     <div className="flex items-center gap-2">
                                         <CurrencyDollarIcon className="h-4 w-4 text-gray-500" />
-                                        <span>Total: ${booking.totalPrice?.toFixed(2)}</span>
+                                        <span>Total: ${booking.totalCost?.toFixed(2)}</span>
                                     </div>
 
                                     {/* Show departure date if calculated */}
@@ -220,7 +214,7 @@ const BookingStatusTab = () => {
                                         <div className="flex items-center gap-2">
                                             <CalendarIcon className="h-4 w-4 text-gray-500" />
                                             <span>
-                                                Departure: {departureDate instanceof Date ? departureDate.toLocaleDateString() : departureDate}
+                                                Departure: {booking.endDate instanceof Date ? booking.endDate.toLocaleDateString() : booking.endDate}
                                             </span>
                                         </div>
                                     )}
@@ -229,7 +223,7 @@ const BookingStatusTab = () => {
                                 {booking.status === 'confirmed' && (
                                     <div className="flex justify-end">
                                         <button
-                                            onClick={() => handleCancelBooking(booking._id, booking.startDate || departureDate || booking.date)}
+                                            onClick={() => handleCancelBooking(booking._id, booking.startDate || booking.endDate || booking.date)}
                                             className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white border border-rose-100 text-rose-600 rounded-md hover:bg-rose-50 transition-colors"
                                         >
                                             <XCircleIcon className="h-4 w-4" />
