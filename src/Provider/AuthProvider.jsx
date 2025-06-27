@@ -23,73 +23,74 @@ const googleProvider = new GoogleAuthProvider();
 const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loggedUser, setLoggedUser] = useState(null);
-    const [authLoading, setAuthLoading] = useState(true);
-    const [profileLoading, setProfileLoading] = useState(false);
+    const [loading, setLoading] = useState(true); // Combined loading state
+    const [profileUpdating, setProfileUpdating] = useState(false); // Only for profile updates
     const axiosPublic = useAxiosPublic();
     const axiosSecure = useAxiosSecure();
 
     const createUser = async (email, password) => {
-        setAuthLoading(true);
+        setLoading(true);
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             setUser(userCredential.user);
             return userCredential;
         } finally {
-            setAuthLoading(false);
+            setLoading(false);
         }
     };
 
     const login = async (email, password) => {
-        setAuthLoading(true);
+        setLoading(true);
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             setUser(userCredential.user);
             await fetchUserData(userCredential.user.email);
             return userCredential;
         } finally {
-            setAuthLoading(false);
+            setLoading(false);
         }
     };
 
     const loginWithGoogle = async () => {
-        setAuthLoading(true);
+        setLoading(true);
         try {
             const userCredential = await signInWithPopup(auth, googleProvider);
             setUser(userCredential.user);
             await fetchUserData(userCredential.user.email);
             return userCredential;
         } finally {
-            setAuthLoading(false);
+            setLoading(false);
         }
     };
 
     const logout = async () => {
-        setAuthLoading(true);
+        setLoading(true);
         try {
             await signOut(auth);
             setUser(null);
             setLoggedUser(null);
             localStorage.removeItem('access-token');
         } finally {
-            setAuthLoading(false);
+            setLoading(false);
         }
     };
 
     const updateUserProfile = async (name, photo) => {
-        setProfileLoading(true);
+        setProfileUpdating(true);
         try {
             await updateProfile(auth.currentUser, {
                 displayName: name,
                 photoURL: photo
             });
             setUser({ ...auth.currentUser });
+            // Refresh user data after profile update
+            await fetchUserData(auth.currentUser.email);
         } finally {
-            setProfileLoading(false);
+            setProfileUpdating(false);
         }
     };
 
     const fetchUserData = async (email) => {
-        setProfileLoading(true);
         try {
             const tokenResponse = await axiosPublic.post('/jwt', { email });
             if (tokenResponse.data.token) {
@@ -99,23 +100,22 @@ const AuthProvider = ({ children }) => {
             }
         } catch (error) {
             console.error("Failed to fetch user data:", error);
-        } finally {
-            setProfileLoading(false);
+            // If fetching user data fails, log out the user
+            await logout();
         }
     };
-    console.log("loggedUser", loggedUser);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            setUser(currentUser);
-
             if (currentUser) {
+                setUser(currentUser);
                 await fetchUserData(currentUser.email);
             } else {
-                localStorage.removeItem('access-token');
+                setUser(null);
                 setLoggedUser(null);
+                localStorage.removeItem('access-token');
             }
-            setAuthLoading(false);
+            setLoading(false);
         });
 
         return unsubscribe;
@@ -124,13 +124,16 @@ const AuthProvider = ({ children }) => {
     const authInfo = {
         user,
         loggedUser,
-        authLoading,
-        profileLoading,
+        loading,
+        profileUpdating,
+        isAuthenticated: !!user,
         createUser,
         login,
         loginWithGoogle,
         logout,
         updateUserProfile,
+        setUser,
+        fetchUserData
     };
 
     return (

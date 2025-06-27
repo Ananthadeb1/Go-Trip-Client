@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 
 const Login = () => {
-    const { login } = useAuth();
+    const { login, setUser } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [errors, setErrors] = useState({ email: '', password: '', general: '' });
@@ -44,6 +44,7 @@ const Login = () => {
             .then(result => {
                 const user = result.user;
                 console.log(user);
+                setUser(user);
                 navigate(from, { replace: true });
             })
             .catch(error => {

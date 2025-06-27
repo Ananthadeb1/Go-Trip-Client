@@ -12,7 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import Swal from 'sweetalert2';
 
 const UserProfile = () => {
-    const { loggedUser, updateUser } = useAuth();
+    const { loggedUser } = useAuth();
     const [activeTab, setActiveTab] = useState('Profile');
     const [userData, setUserData] = useState(loggedUser);
 

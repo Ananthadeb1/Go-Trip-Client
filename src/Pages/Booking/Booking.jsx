@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { useState, } from "react";
+import { useState } from "react";
 import useAxiosPublic from "../../hooks/useAxiosPublic";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -115,27 +115,22 @@ const Booking = () => {
 
     // Filter hotels based on all criteria
     const filteredHotels = hotels?.filter(hotel => {
-        // Destination filter
         const matchesDestination = !appliedFilters.destination ||
             hotel.location.toLowerCase().includes(appliedFilters.destination.toLowerCase());
-
         return matchesDestination;
     }).flatMap(hotel => {
-        // Filter rooms based on room type and occupancy
         return hotel.rooms
             .filter(room => {
                 const matchesRoomType = !searchParams.roomTypeFilter ||
                     room.type === searchParams.roomTypeFilter;
                 const matchesOccupancy = !appliedFilters.totalPersons ||
                     room.maxOccupancy >= parseInt(appliedFilters.totalPersons);
-
                 return matchesRoomType && matchesOccupancy;
             })
             .map((room, roomIndex) => ({
                 ...hotel,
                 roomDetails: room,
                 roomIndex,
-                // Calculate average rating
                 averageRating: hotel.reviews?.length > 0
                     ? (hotel.reviews.reduce((sum, review) => sum + review.rating, 0) / hotel.reviews.length).toFixed(1)
                     : "No ratings"
@@ -174,7 +169,6 @@ const Booking = () => {
             [name]: value
         }));
 
-        // Clear error when field is filled
         if (value && searchErrors[name]) {
             setSearchErrors(prev => ({
                 ...prev,
@@ -182,7 +176,6 @@ const Booking = () => {
             }));
         }
 
-        // Apply filters immediately for sort and room type
         if (name === "sortOption" || name === "roomTypeFilter") {
             setCurrentPage(1);
         }
@@ -204,7 +197,7 @@ const Booking = () => {
     };
 
     return (
-        <div className="min-h-screen py-8">
+        <div className="min-h-screen py-8 relative">
             <motion.div
                 initial="hidden"
                 animate="show"
@@ -242,7 +235,7 @@ const Booking = () => {
                         {/* Search Bar */}
                         <motion.div
                             whileHover={{ scale: 1.005 }}
-                            className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-white/90"
+                            className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-white/90 relative z-10"
                         >
                             <form onSubmit={applyFilters}
                                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -269,7 +262,7 @@ const Booking = () => {
                                 </div>
 
                                 {/* Check-in Date */}
-                                <div className="relative">
+                                <div className="relative z-30">
                                     <DatePicker
                                         selected={searchParams.checkInDate ? new Date(searchParams.checkInDate) : null}
                                         onChange={date => {
@@ -278,7 +271,6 @@ const Booking = () => {
                                                 ...prev,
                                                 checkInDate: formattedDate
                                             }));
-                                            // Clear error when field is filled
                                             if (formattedDate && searchErrors.checkInDate) {
                                                 setSearchErrors(prev => ({
                                                     ...prev,
@@ -293,27 +285,16 @@ const Booking = () => {
                                         className="w-full p-2 border border-gray-200 rounded-lg focus:ring-[#FF2056] focus:border-[#FF2056] bg-white/90 text-center"
                                         placeholderText="Select check-in"
                                         dateFormat="dd-MM-yyyy"
-                                        id="checkInDate"
-                                        name="checkInDate"
-                                        required
                                         popperPlacement="bottom-start"
-                                        popperModifiers={[
-                                            {
-                                                name: "zIndex",
-                                                enabled: true,
-                                                phase: "write",
-                                                fn: ({ state }) => {
-                                                    state.styles.popper.zIndex = 9999;
-                                                }
-                                            }
-                                        ]}
+                                        popperClassName="z-[1000]"
                                     />
                                     {searchErrors.checkInDate && (
                                         <p className="absolute -bottom-5 text-xs text-red-500">{searchErrors.checkInDate}</p>
                                     )}
                                 </div>
-                                {/* checkOutDate */}
-                                <div className="relative z-10">
+
+                                {/* Check-out Date */}
+                                <div className="relative z-30">
                                     <DatePicker
                                         selected={searchParams.checkOutDate ? new Date(searchParams.checkOutDate) : null}
                                         onChange={date => {
@@ -322,7 +303,6 @@ const Booking = () => {
                                                 ...prev,
                                                 checkOutDate: formattedDate
                                             }));
-                                            // Clear error when field is filled
                                             if (formattedDate && searchErrors.checkOutDate) {
                                                 setSearchErrors(prev => ({
                                                     ...prev,
@@ -337,14 +317,14 @@ const Booking = () => {
                                         className="w-full p-2 border border-gray-200 rounded-lg focus:ring-[#FF2056] focus:border-[#FF2056] bg-white/90 text-center"
                                         placeholderText="Select check-out"
                                         dateFormat="dd-MM-yyyy"
-                                        id="checkOutDate"
-                                        name="checkOutDate"
-                                        required
+                                        popperPlacement="bottom-start"
+                                        popperClassName="z-[1000]"
                                     />
                                     {searchErrors.checkOutDate && (
                                         <p className="absolute -bottom-5 text-xs text-red-500">{searchErrors.checkOutDate}</p>
                                     )}
                                 </div>
+
                                 <div className="relative">
                                     <input
                                         type="number"
@@ -360,6 +340,7 @@ const Booking = () => {
                                         <p className="absolute -bottom-5 text-xs text-red-500">{searchErrors.totalPersons}</p>
                                     )}
                                 </div>
+
                                 <motion.button
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}

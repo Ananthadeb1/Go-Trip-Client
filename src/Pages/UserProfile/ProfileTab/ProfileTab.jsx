@@ -3,12 +3,14 @@ import { useState } from 'react';
 import useAxiosSecure from '../../../hooks/useAxiosSecure';
 import { useQueryClient } from '@tanstack/react-query';
 import Swal from 'sweetalert2';
+import useAuth from '../../../hooks/useAuth';
 
 const ProfileTab = ({ user, onEdit }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedUser, setEditedUser] = useState({ ...user });
     const axiosSecure = useAxiosSecure();
     const queryClient = useQueryClient();
+    const { loggedUser, fetchUserData } = useAuth()
 
     const handleEditClick = () => {
         setIsEditing(!isEditing);
@@ -37,6 +39,7 @@ const ProfileTab = ({ user, onEdit }) => {
 
             // Send the update to the server
             await axiosSecure.patch(`/users/${_id}`, userData);
+            fetchUserData(loggedUser.email);
 
             // Confirm the update was successful
             await Swal.fire({

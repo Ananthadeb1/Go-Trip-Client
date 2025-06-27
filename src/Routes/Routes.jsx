@@ -10,6 +10,7 @@ import Booking from "../Pages/Booking/Booking";
 import Dashboard from "../Pages/Dashboard/Dashboard";
 import HotelDetails from "../Pages/Booking/HotelDetails/HotelDetails";
 import UserProfile from "../Pages/UserProfile/UserProfile";
+import GoogleMap from "../Map/GoogleMap/GoogleMap";
 
 
 export const router = createBrowserRouter([
@@ -52,7 +53,11 @@ export const router = createBrowserRouter([
                 element: <PrivateRoute>
                     <UserProfile></UserProfile>
                 </PrivateRoute>
-            }
+            },
+            // {
+            //     path: "/googleMap",
+            //     element: <GoogleMap latitude={23.800631731459443} longitude={90.41142662901615}></GoogleMap>
+            // }
 
         ]
     },
