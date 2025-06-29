@@ -17,10 +17,10 @@ const Dashboard = () => {
         { name: 'Service Management', icon: faConciergeBell },
         { name: 'Analytics', icon: faChartLine },
         { name: 'Bookings', icon: faCalendarAlt },
-        { name: 'Inventory', icon: faBox },
+        // { name: 'Inventory', icon: faBox },
         { name: 'Billing', icon: faDollarSign },
-        { name: 'Reports', icon: faFileAlt },
-        { name: 'Settings', icon: faCog }
+        // { name: 'Reports', icon: faFileAlt },
+        // { name: 'Settings', icon: faCog }
     ];
 
     const renderComponent = () => {

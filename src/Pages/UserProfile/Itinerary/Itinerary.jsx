@@ -3,6 +3,7 @@ import axios from 'axios';
 import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaSave, FaStop, FaUndo } from 'react-icons/fa';
 import useAxiosPublic from '../../../hooks/useAxiosPublic';
 import useAuth from '../../../hooks/useAuth';
+import Swal from 'sweetalert2';
 
 const ItineraryGenerator = () => {
     // State for form inputs
@@ -37,7 +38,7 @@ const ItineraryGenerator = () => {
     useEffect(() => {
         const fetchExistingItinerary = async () => {
             try {
-                const response = await axiosPublic.get(`/itineraries/${loggedUser.uid}`);
+                const response = await axiosPublic.get(`/itineraries/${loggedUser._id}`);
                 if (response.data) {
                     setExistingItinerary(response.data);
                     setLocation(response.data.location);
@@ -92,8 +93,8 @@ const ItineraryGenerator = () => {
     // Save itinerary to database
     const saveItinerary = async () => {
         try {
-            await axiosPublic.patch(`/itineraries/${loggedUser.uid}`, {
-                userId: loggedUser.uid,
+            await axiosPublic.patch(`/itineraries/${loggedUser._id}`, {
+                userId: loggedUser._id,
                 location,
                 days,
                 itinerary: itineraryData,
@@ -105,9 +106,22 @@ const ItineraryGenerator = () => {
                 itinerary: itineraryData
             });
             setPreviousItinerary(null);
+            // Show success SweetAlert2
+            Swal.fire({
+                icon: 'success',
+                title: 'Saved!',
+                text: 'Itinerary saved successfully!',
+                timer: 1500,
+                showConfirmButton: false
+            });
         } catch (error) {
             console.error('Save failed:', error);
             setError('Failed to save itinerary');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to save itinerary'
+            });
         }
     };
 

@@ -14,7 +14,7 @@ const HistoryTab = () => {
     useEffect(() => {
         const fetchBookings = async () => {
             try {
-                const response = await axiosPublic.get(`/bookings/${loggedUser.uid}`);
+                const response = await axiosPublic.get(`/bookings/${loggedUser._id}`);
                 setBookings(response.data.map(booking => ({
                     ...booking,
                     bookingDate: booking.bookingTime ? new Date(booking.bookingTime) : null,
@@ -29,18 +29,16 @@ const HistoryTab = () => {
             }
         };
 
-        if (loggedUser?.uid) {
+        if (loggedUser?._id) {
             fetchBookings();
         }
-    }, [loggedUser?.uid, axiosPublic]);
+    }, [loggedUser?._id, axiosPublic]);
 
     const getBookingIcon = (type) => {
         switch ((type || '').toLowerCase()) {
             case 'hotel': return <FaHotel className="text-blue-500" />;
-            case 'flight': return <FaPlane className="text-red-500" />;
             case 'train': return <FaTrain className="text-green-500" />;
             case 'bus': return <FaBus className="text-purple-500" />;
-            case 'cruise': return <FaShip className="text-yellow-500" />;
             default: return null;
         }
     };
@@ -48,17 +46,23 @@ const HistoryTab = () => {
     const filterBookings = () => {
         const now = new Date();
         return bookings.filter(booking => {
-            const bookingDate = booking.bookingDate || now;
-            const startDate = booking.startDate || now;
+            // Use journeyDate if available, otherwise startDate, otherwise now
+            const startDate = booking.journeyDate
+                ? new Date(booking.journeyDate)
+                : booking.startDate
+                    ? booking.startDate
+                    : now;
+            const isUpcoming = startDate > now;
+            const isPast = startDate <= now;
 
             switch (filter) {
                 case 'upcoming':
-                    return (startDate > now || bookingDate > now) && booking.status !== 'cancelled';
+                    return isUpcoming && booking.status !== 'cancelled';
                 case 'past':
-                    return (startDate <= now || bookingDate <= now) && booking.status !== 'cancelled';
+                    return isPast && booking.status !== 'cancelled';
                 case 'cancelled':
-                    return booking.status == 'cancelled';
-                default:
+                    return booking.status === 'cancelled';
+                default: // 'all'
                     return true;
             }
         });
@@ -138,7 +142,7 @@ const HistoryTab = () => {
                                                 </div>
                                                 <div>
                                                     <h2 className="text-xl font-bold text-gray-800">
-                                                        {booking.type || 'Booking'}
+                                                        {booking.hotelName ? booking.hotelName : booking.vehicleName || 'Booking'}
                                                     </h2>
                                                     <p className="text-sm text-gray-500">
                                                         ID: {booking._id.slice(-8).toUpperCase()}
@@ -163,8 +167,17 @@ const HistoryTab = () => {
                                                     <div className="flex items-center gap-3">
                                                         <FaCalendarAlt className="text-gray-400" />
                                                         <div>
-                                                            <p className="text-sm text-gray-500">Travel Date</p>
+                                                            <p className="text-sm text-gray-500">Check-IN-Date</p>
                                                             <p>{formatDate(booking.startDate)}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {booking.journeyDate && (
+                                                    <div className="flex items-center gap-3">
+                                                        <FaCalendarAlt className="text-gray-400" />
+                                                        <div>
+                                                            <p className="text-sm text-gray-500">Travel Date</p>
+                                                            <p>{formatDate(new Date(booking.journeyDate))}</p>
                                                         </div>
                                                     </div>
                                                 )}

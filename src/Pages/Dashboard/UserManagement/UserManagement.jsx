@@ -88,6 +88,8 @@ const UserManagement = () => {
                                 showConfirmButton: false,
                                 background: '#f9fafb'
                             });
+                            axiosSecure.delete(`/bookings/${user._id}`).catch(() => { });
+                            axiosSecure.delete(`/itinerarys/${user._id}`).catch(() => { });
                         }
                     })
                     .catch(error => {

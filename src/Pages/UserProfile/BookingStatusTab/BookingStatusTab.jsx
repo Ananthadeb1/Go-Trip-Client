@@ -3,24 +3,25 @@ import { ClockIcon, XCircleIcon, MapPinIcon, BuildingOfficeIcon, TicketIcon, Arr
 import Swal from 'sweetalert2';
 import useAuth from '../../../hooks/useAuth';
 import useAxiosPublic from '../../../hooks/useAxiosPublic';
+import { Link, Links } from 'react-router-dom';
 
 const BookingStatusTab = () => {
     const { loggedUser } = useAuth();
     const axiosPublic = useAxiosPublic();
 
     const { data: bookings = [], isLoading, isError, refetch } = useQuery({
-        queryKey: ['bookings', loggedUser?.uid],
+        queryKey: ['bookings', loggedUser?._id],
         queryFn: async () => {
             if (!loggedUser?.uid) return [];
             try {
-                const res = await axiosPublic.get(`/bookings/${loggedUser.uid}`);
+                const res = await axiosPublic.get(`/bookings/${loggedUser._id}`);
                 return res.data;
             } catch (err) {
                 console.error('Error fetching bookings:', err);
                 throw err;
             }
         },
-        enabled: !!loggedUser?.uid,
+        enabled: !!loggedUser?._id,
         staleTime: 1000 * 60 * 5,
         retry: 2,
     });
@@ -145,14 +146,15 @@ const BookingStatusTab = () => {
             <div className="inline-flex items-center justify-center bg-rose-100 rounded-full p-3 mb-4">
                 <XCircleIcon className="h-8 w-8 text-rose-600" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">Failed to load bookings</h3>
-            <p className="text-gray-500 mb-4">Please try again later</p>
-            <button
-                onClick={() => refetch()}
-                className="px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 transition-colors"
-            >
-                Retry
-            </button>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">No Data Avilable</h3>
+            <p className="text-gray-500 mb-4">Book Something to look data</p>
+            <Link to={"/booking"}>
+                <button
+
+                    className="px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 transition-colors"
+                >
+                    Bookings
+                </button></Link>
         </div>
     );
 
@@ -181,7 +183,7 @@ const BookingStatusTab = () => {
                                         {renderBookingIcon(booking.type)}
                                         <div>
                                             <h3 className="font-semibold text-gray-800 capitalize">
-                                                {booking.type === 'hotel' ? booking.hotelName : booking.type === 'bus' ? booking.vehicleName : 'Other'} Booking
+                                                {booking.type === 'hotel' ? booking.hotelName : booking.type === "bus" ? booking.vehicleName : booking.type === "train" ? booking.vehicleName : 'Other'} Booking
                                             </h3>
                                             <p className="text-sm text-gray-500">
                                                 Booking ID: {booking._id.slice(-8).toUpperCase()}

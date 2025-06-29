@@ -95,7 +95,7 @@ const PaymentModal = ({
             const bookingData = {};
 
             if (type === 'hotel') {
-                bookingData.userId = loggedUser.uid;
+                bookingData.userId = loggedUser._id || "";
                 bookingData.hotelId = hotelid;
                 bookingData.hotelName = hotelName;
                 bookingData.hotelLocation = hotelLocation;
@@ -113,7 +113,7 @@ const PaymentModal = ({
                 bookingData.specialRequests = specialRequests || '';
             }
             else if (type === 'bus' || type === 'train') {
-                bookingData.userId = loggedUser.uid;
+                bookingData.userId = loggedUser._id || "";
                 bookingData.vehicleId = vehicleId;
                 bookingData.vehicleName = vehicleName;
                 bookingData.vehicleType = vehicleType;

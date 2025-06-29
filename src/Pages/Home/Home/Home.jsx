@@ -27,32 +27,32 @@ const destinations = [
     {
         name: "Surumban",
         tagline: "Invitable landscapes",
-        image: "https://images.unsplash.com/photo-1506929562872-bb421503ef21?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80"
+        image: "https://media.istockphoto.com/id/2170474187/photo/a-canal-in-sundarbans.jpg?s=2048x2048&w=is&k=20&c=KFshxr5xfEZqfGLdlEcbV1eCVyKKBjLv_mwxJRkHOxQ="
     },
     {
-        name: "Coverman",
-        tagline: "Coastal paradise",
-        image: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80"
+        name: "Cox's Bazar",
+        tagline: "sea view",
+        image: "https://images.unsplash.com/photo-1503803548695-c2a7b4a5b875?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
     },
     {
-        name: "Montavia",
-        tagline: "Mountain retreat",
-        image: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80"
+        name: "Gazipur",
+        tagline: "Forest Street",
+        image: "https://media.istockphoto.com/id/1077237952/photo/road-in-the-forest-moody-style-image.jpg?s=2048x2048&w=is&k=20&c=kdSvIMme7xp5_1XPlmuNt4rXsL2E5huGf8WeO9d1Drw="
     },
     {
-        name: "Urbanis",
-        tagline: "Metropolitan charm",
-        image: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80"
+        name: "Puran Dhaka",
+        tagline: "Histroy and Calture",
+        image: "https://images.unsplash.com/photo-1616458050653-0f365d14e93b?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
     },
     {
-        name: "Tropica",
-        tagline: "Island getaway",
-        image: "https://images.unsplash.com/photo-1519046904884-53103b34b206?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80"
+        name: "BandarBan",
+        tagline: "Rocky Mountain",
+        image: "https://media.istockphoto.com/id/870874602/photo/snow-patches-olympic-mountains-mount-angeles-olympic-national-park-washington.jpg?s=1024x1024&w=is&k=20&c=iEwvucOXUahj3nE6q4eNco0Qpa6BTwOUrxaX9Xxg-FY="
     },
     {
-        name: "Nordica",
-        tagline: "Northern lights",
-        image: "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1770&q=80"
+        name: "sylhet",
+        tagline: "Enjoy Waterfall",
+        image: "https://images.unsplash.com/photo-1501761095094-94d36f57edbb?q=80&w=765&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
     }
 ];
 const Home = () => {

@@ -1,580 +1,236 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-    CurrencyDollarIcon,
-    PlusIcon,
-    TrashIcon,
-    PencilIcon,
-    ChartBarIcon,
-    CalendarIcon,
-    TagIcon,
-    ReceiptRefundIcon
-} from '@heroicons/react/24/outline';
-import useAuth from '../../../hooks/useAuth';
+import { CurrencyDollarIcon, PlusIcon, TrashIcon, PencilIcon } from '@heroicons/react/24/solid';
 import useAxiosPublic from '../../../hooks/useAxiosPublic';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import Swal from 'sweetalert2';
-
-const COLORS = ['#e11d48', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']; // Rose, Blue, Green, Amber, Violet
+import useAuth from '../../../hooks/useAuth';
 
 const ExpenseTrackingTab = () => {
     const { loggedUser } = useAuth();
     const axiosPublic = useAxiosPublic();
     const queryClient = useQueryClient();
-    const [activeTab, setActiveTab] = useState('all');
-    const [isAddingExpense, setIsAddingExpense] = useState(false);
-    const [editingExpense, setEditingExpense] = useState(null);
-    const [filterDate, setFilterDate] = useState(null);
-    const [filterCategory, setFilterCategory] = useState('all');
-
-    // Form state
-    const [formData, setFormData] = useState({
-        description: '',
+    const [expense, setExpense] = useState({
+        title: '',
         amount: '',
-        category: 'transportation',
-        date: new Date(),
-        type: 'expense'
+        category: 'Food',
+        date: new Date().toISOString().split('T')[0]
     });
+    const [editingId, setEditingId] = useState(null);
+    const categories = ['Food', 'Transportation', 'Accommodation', 'Entertainment', 'Other'];
 
     // Fetch expenses
     const { data: expenses = [] } = useQuery({
-        queryKey: ['expenses', loggedUser?.uid],
-        queryFn: async () => {
-            if (!loggedUser?.uid) return [];
-            const res = await axiosPublic.get(`/expenses/${loggedUser.uid}`);
-            return res.data;
+        queryKey: ['expenses', loggedUser?._id],
+        queryFn: () => axiosPublic.get(`/expenses/${loggedUser._id}`).then(res => res.data),
+        enabled: !!loggedUser?._id,
+    });
+
+    // Add/Update mutation with optimistic updates
+    const mutation = useMutation({
+        mutationFn: (expenseData) => {
+            const method = expenseData._id ? 'patch' : 'post';
+            const url = expenseData._id ? `/expenses/${expenseData._id}` : '/expenses';
+            return axiosPublic[method](url, { ...expenseData, userId: loggedUser._id });
         },
-        enabled: !!loggedUser?.uid
-    });
+        onMutate: async (newExpense) => {
+            // Cancel any outgoing refetches
+            await queryClient.cancelQueries(['expenses', loggedUser._id]);
 
-    // Fetch bookings
-    const { data: bookings = [] } = useQuery({
-        queryKey: ['bookings', loggedUser?.uid],
-        queryFn: async () => {
-            if (!loggedUser?.uid) return [];
-            const res = await axiosPublic.get(`/bookings/${loggedUser.uid}`);
-            return res.data;
-        },
-        enabled: !!loggedUser?.uid
-    });
-    console.log('Bookings:', bookings);
+            // Snapshot the previous value
+            const previousExpenses = queryClient.getQueryData(['expenses', loggedUser._id]);
 
-    // Combine and sort transactions
-    const allTransactions = [
-        ...bookings.map(booking => ({
-            ...booking,
-            id: booking._id,
-            description: `${booking.type} booking`,
-            amount: Number(booking.totalCost) || 0,
-            date: new Date(booking.bookingTime),
-            category: 'booking',
-            type: 'expense',
-            isBooking: true
-        })),
-        ...expenses.map(expense => ({
-            ...expense,
-            id: expense._id,
-            amount: Number(expense.amount) || 0,
-            date: new Date(expense.date),
-            isBooking: false
-        }))
-    ].sort((a, b) => b.date - a.date);
-
-    // Filter transactions
-    const filteredTransactions = allTransactions.filter(transaction => {
-        const matchesType = activeTab === 'all' || transaction.type === activeTab;
-        const matchesDate = !filterDate ||
-            transaction.date.toDateString() === filterDate.toDateString();
-        const matchesCategory = filterCategory === 'all' ||
-            transaction.category === filterCategory;
-        return matchesType && matchesDate && matchesCategory;
-    });
-
-    // Calculate totals with null checks
-    const totals = {
-        expense: allTransactions
-            .filter(t => t.type === 'expense')
-            .reduce((sum, t) => sum + (t.amount || 0), 0),
-        income: allTransactions
-            .filter(t => t.type === 'income')
-            .reduce((sum, t) => sum + (t.amount || 0), 0),
-        balance: allTransactions
-            .reduce((sum, t) => t.type === 'income' ?
-                sum + (t.amount || 0) :
-                sum - (t.amount || 0), 0)
-    };
-
-    // Prepare chart data
-    const categoryData = Object.entries(
-        allTransactions
-            .filter(t => t.type === 'expense')
-            .reduce((acc, t) => {
-                acc[t.category] = (acc[t.category] || 0) + (t.amount || 0);
-                return acc;
-            }, {})
-    ).map(([name, value]) => ({ name, value }));
-
-    const monthlyData = Array.from({ length: 12 }, (_, i) => {
-        const month = new Date();
-        month.setMonth(i);
-        const monthName = month.toLocaleString('default', { month: 'short' });
-        const expenses = allTransactions
-            .filter(t => t.type === 'expense' && t.date.getMonth() === i)
-            .reduce((sum, t) => sum + (t.amount || 0), 0);
-        const income = allTransactions
-            .filter(t => t.type === 'income' && t.date.getMonth() === i)
-            .reduce((sum, t) => sum + (t.amount || 0), 0);
-        return { name: monthName, expenses, income };
-    });
-
-    // Mutation for adding/updating expenses
-    const expenseMutation = useMutation({
-        mutationFn: async (expenseData) => {
-            if (editingExpense) {
-                return await axiosPublic.patch(`/expenses/${editingExpense._id}`, expenseData);
+            // Optimistically update to the new value
+            if (newExpense._id) {
+                // Update existing expense
+                queryClient.setQueryData(['expenses', loggedUser._id], (old) =>
+                    old.map(exp => exp._id === newExpense._id ? newExpense : exp)
+                );
             } else {
-                return await axiosPublic.post('/expenses', expenseData);
+                // Add new expense (we don't have ID yet, so we'll create a temporary one)
+                const tempExpense = { ...newExpense, _id: Date.now().toString() };
+                queryClient.setQueryData(['expenses', loggedUser._id], (old) =>
+                    [...old, tempExpense]
+                );
             }
+
+            return { previousExpenses };
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries(['expenses', loggedUser?.uid]);
-            resetForm();
+        onError: (err, newExpense, context) => {
+            // Rollback to previous state on error
+            queryClient.setQueryData(['expenses', loggedUser._id], context.previousExpenses);
+        },
+        onSettled: () => {
+            // Always refetch after error or success
+            queryClient.invalidateQueries(['expenses', loggedUser._id]);
         }
     });
 
-    // Handle form submission
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        const amount = parseFloat(formData.amount);
-        if (isNaN(amount)) {
-            Swal.fire('Error', 'Please enter a valid amount', 'error');
-            return;
-        }
-
-        const payload = {
-            ...formData,
-            amount,
-            userId: loggedUser?.uid,
-            date: formData.date.toISOString()
-        };
-
-        expenseMutation.mutate(payload);
-    };
-
-    // Reset form
-    const resetForm = () => {
-        setFormData({
-            description: '',
-            amount: '',
-            category: 'transportation',
-            date: new Date(),
-            type: 'expense'
-        });
-        setIsAddingExpense(false);
-        setEditingExpense(null);
-    };
-
-    // Edit expense
-    const handleEdit = (expense) => {
-        setEditingExpense(expense);
-        setFormData({
-            description: expense.description,
-            amount: expense.amount.toString(),
-            category: expense.category,
-            date: new Date(expense.date),
-            type: expense.type
-        });
-        setIsAddingExpense(true);
-    };
-
-    // Delete expense
+    // Delete mutation with optimistic updates
     const deleteMutation = useMutation({
-        mutationFn: async (id) => {
-            return await axiosPublic.delete(`/expenses/${id}`);
+        mutationFn: (id) => axiosPublic.delete(`/expenses/${id}`),
+        onMutate: async (id) => {
+            await queryClient.cancelQueries(['expenses', loggedUser._id]);
+            const previousExpenses = queryClient.getQueryData(['expenses', loggedUser._id]);
+
+            queryClient.setQueryData(['expenses', loggedUser._id], (old) =>
+                old.filter(exp => exp._id !== id)
+            );
+
+            return { previousExpenses };
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries(['expenses', loggedUser?.uid]);
+        onError: (err, id, context) => {
+            queryClient.setQueryData(['expenses', loggedUser._id], context.previousExpenses);
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries(['expenses', loggedUser._id]);
         }
     });
 
-    const handleDelete = (id) => {
-        Swal.fire({
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await mutation.mutateAsync(editingId ? { ...expense, _id: editingId } : expense);
+
+            // Reset form
+            setExpense({ title: '', amount: '', category: 'Food', date: new Date().toISOString().split('T')[0] });
+            setEditingId(null);
+
+            // Show success message
+            const Swal = (await import('sweetalert2')).default;
+            Swal.fire({
+                icon: 'success',
+                title: editingId ? 'Expense updated!' : 'Expense added!',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        } catch (error) {
+            console.error('Error saving expense:', error);
+        }
+    };
+
+    const handleDelete = async (id) => {
+        const Swal = (await import('sweetalert2')).default;
+        const result = await Swal.fire({
             title: 'Are you sure?',
             text: "You won't be able to revert this!",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#e11d48',
-            cancelButtonColor: '#6b7280',
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
             confirmButtonText: 'Yes, delete it!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                deleteMutation.mutate(id);
-            }
         });
+
+        if (result.isConfirmed) {
+            try {
+                await deleteMutation.mutateAsync(id);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Deleted!',
+                    text: 'Your expense has been deleted.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } catch (error) {
+                console.error('Error deleting expense:', error);
+            }
+        }
     };
 
-    // Categories
-    const categories = [
-        { value: 'transportation', label: 'Transportation' },
-        { value: 'accommodation', label: 'Accommodation' },
-        { value: 'food', label: 'Food & Dining' },
-        { value: 'entertainment', label: 'Entertainment' },
-        { value: 'shopping', label: 'Shopping' },
-        { value: 'booking', label: 'Bookings' },
-        { value: 'other', label: 'Other' }
-    ];
+    const total = expenses.reduce((sum, e) => sum + +e.amount, 0);
 
     return (
-        <div className="space-y-6">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">Total Expenses</p>
-                            <p className="text-2xl font-semibold text-rose-600">
-                                ${totals.expense.toFixed(2)}
-                            </p>
-                        </div>
-                        <div className="p-3 bg-rose-50 rounded-full">
-                            <ReceiptRefundIcon className="h-6 w-6 text-rose-600" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">Total Income</p>
-                            <p className="text-2xl font-semibold text-green-600">
-                                ${totals.income.toFixed(2)}
-                            </p>
-                        </div>
-                        <div className="p-3 bg-green-50 rounded-full">
-                            <CurrencyDollarIcon className="h-6 w-6 text-green-600" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500">Balance</p>
-                            <p className={`text-2xl font-semibold ${totals.balance >= 0 ? 'text-green-600' : 'text-rose-600'
-                                }`}>
-                                ${Math.abs(totals.balance).toFixed(2)}
-                            </p>
-                        </div>
-                        <div className="p-3 bg-blue-50 rounded-full">
-                            <ChartBarIcon className="h-6 w-6 text-blue-600" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                    <h3 className="font-medium text-gray-800 mb-4">Expense Categories</h3>
-                    <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={categoryData}
-                                    cx="50%"
-                                    cy="50%"
-                                    labelLine={false}
-                                    outerRadius={80}
-                                    dataKey="value"
-                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                >
-                                    {categoryData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip formatter={(value) => [`$${value.toFixed(2)}`, 'Amount']} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                    <h3 className="font-medium text-gray-800 mb-4">Monthly Overview</h3>
-                    <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={monthlyData}>
-                                <XAxis dataKey="name" />
-                                <YAxis />
-                                <Tooltip formatter={(value) => [`$${value.toFixed(2)}`, 'Amount']} />
-                                <Legend />
-                                <Bar dataKey="expenses" name="Expenses" fill="#e11d48" />
-                                <Bar dataKey="income" name="Income" fill="#10b981" />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            </div>
-
-            {/* Controls */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setActiveTab('all')}
-                        className={`px-3 py-1 text-sm rounded-md ${activeTab === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-                    >
-                        All
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('expense')}
-                        className={`px-3 py-1 text-sm rounded-md ${activeTab === 'expense' ? 'bg-rose-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-                    >
-                        Expenses
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('income')}
-                        className={`px-3 py-1 text-sm rounded-md ${activeTab === 'income' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-                    >
-                        Income
-                    </button>
-                </div>
-
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:w-40">
-                        <DatePicker
-                            selected={filterDate}
-                            onChange={date => setFilterDate(date)}
-                            placeholderText="Filter by date"
-                            className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md text-sm"
-                            isClearable
-                        />
-                        <CalendarIcon className="h-4 w-4 text-gray-400 absolute right-3 top-2.5" />
-                    </div>
-
+        <div className="space-y-4 p-4">
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="bg-white p-4 rounded shadow">
+                <h2 className="text-lg font-semibold mb-3">{editingId ? 'Edit' : 'Add'} Expense</h2>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <input
+                        type="text"
+                        placeholder="Title"
+                        value={expense.title}
+                        onChange={(e) => setExpense({ ...expense, title: e.target.value })}
+                        required
+                        className="p-2 border rounded"
+                    />
+                    <input
+                        type="number"
+                        placeholder="Amount"
+                        value={expense.amount}
+                        onChange={(e) => setExpense({ ...expense, amount: e.target.value })}
+                        required
+                        className="p-2 border rounded"
+                    />
                     <select
-                        value={filterCategory}
-                        onChange={e => setFilterCategory(e.target.value)}
-                        className="flex-1 sm:w-40 pl-3 pr-10 py-2 border border-gray-300 rounded-md text-sm"
+                        value={expense.category}
+                        onChange={(e) => setExpense({ ...expense, category: e.target.value })}
+                        className="p-2 border rounded"
                     >
-                        <option value="all">All Categories</option>
-                        {categories.map(cat => (
-                            <option key={cat.value} value={cat.value}>{cat.label}</option>
-                        ))}
+                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
-
                     <button
-                        onClick={() => setIsAddingExpense(true)}
-                        className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                        type="submit"
+                        className="bg-blue-500 text-white p-2 rounded flex items-center justify-center hover:bg-blue-600 transition-colors"
+                        disabled={mutation.isLoading}
                     >
-                        <PlusIcon className="h-4 w-4" />
-                        <span>Add Transaction</span>
+                        {mutation.isLoading ? (
+                            'Processing...'
+                        ) : (
+                            <>
+                                <PlusIcon className="w-4 h-4 mr-1" />
+                                {editingId ? 'Update' : 'Add'}
+                            </>
+                        )}
                     </button>
                 </div>
+            </form>
+
+            {/* Summary */}
+            <div className="bg-white p-4 rounded shadow flex items-center">
+                <CurrencyDollarIcon className="w-5 h-5 mr-2 text-green-500" />
+                <h3 className="font-medium">Total: {total.toFixed(2)} TK</h3>
             </div>
 
-            {/* Add/Edit Form */}
-            {isAddingExpense && (
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                    <h3 className="font-medium text-gray-800 mb-4">
-                        {editingExpense ? 'Edit Transaction' : 'Add New Transaction'}
-                    </h3>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                                <div className="flex gap-2">
+            {/* List */}
+            <div className="bg-white rounded shadow overflow-hidden">
+                <table className="w-full">
+                    <thead className="bg-gray-100">
+                        <tr>
+                            <th className="p-2 text-left">Title</th>
+                            <th className="p-2 text-left">Category</th>
+                            <th className="p-2 text-left">Amount</th>
+                            <th className="p-2 text-left">Date</th>
+                            <th className="p-2 text-left">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {expenses.map(e => (
+                            <tr key={e._id} className="border-t hover:bg-gray-50">
+                                <td className="p-2">{e.title}</td>
+                                <td className="p-2">{e.category}</td>
+                                <td className="p-2">{e.amount} TK</td>
+                                <td className="p-2">{e.date}</td>
+                                <td className="p-2 flex space-x-2">
                                     <button
-                                        type="button"
-                                        onClick={() => setFormData(prev => ({ ...prev, type: 'expense' }))}
-                                        className={`flex-1 py-2 border rounded-md text-sm ${formData.type === 'expense' ? 'bg-rose-100 border-rose-300 text-rose-700' : 'bg-white border-gray-300 text-gray-700'
-                                            }`}
+                                        onClick={() => {
+                                            setExpense(e);
+                                            setEditingId(e._id);
+                                        }}
+                                        className="text-blue-500 hover:text-blue-700"
+                                        disabled={mutation.isLoading}
                                     >
-                                        Expense
+                                        <PencilIcon className="w-4 h-4" />
                                     </button>
                                     <button
-                                        type="button"
-                                        onClick={() => setFormData(prev => ({ ...prev, type: 'income' }))}
-                                        className={`flex-1 py-2 border rounded-md text-sm ${formData.type === 'income' ? 'bg-green-100 border-green-300 text-green-700' : 'bg-white border-gray-300 text-gray-700'
-                                            }`}
+                                        onClick={() => handleDelete(e._id)}
+                                        className="text-red-500 hover:text-red-700"
+                                        disabled={deleteMutation.isLoading}
                                     >
-                                        Income
+                                        <TrashIcon className="w-4 h-4" />
                                     </button>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                                <select
-                                    name="category"
-                                    value={formData.category}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                                    className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md text-sm"
-                                    required
-                                >
-                                    {categories.map(cat => (
-                                        <option key={cat.value} value={cat.value}>{cat.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                                <input
-                                    type="text"
-                                    name="description"
-                                    value={formData.description}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                    placeholder="What was this for?"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-2 text-gray-400">$</span>
-                                    <input
-                                        type="number"
-                                        name="amount"
-                                        value={formData.amount}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm"
-                                        placeholder="0.00"
-                                        step="0.01"
-                                        min="0"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                                <DatePicker
-                                    selected={formData.date}
-                                    onChange={(date) => setFormData(prev => ({ ...prev, date }))}
-                                    className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md text-sm"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-2">
-                            <button
-                                type="button"
-                                onClick={resetForm}
-                                className="px-4 py-2 border border-gray-300 text-sm rounded-md hover:bg-gray-50 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
-                                disabled={expenseMutation.isLoading}
-                            >
-                                {expenseMutation.isLoading ? 'Saving...' : editingExpense ? 'Update' : 'Save'}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            )}
-
-            {/* Transactions Table */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Description
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Category
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Date
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Amount
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions
-                                </th>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredTransactions.length === 0 ? (
-                                <tr>
-                                    <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
-                                        No transactions found
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredTransactions.map((transaction) => (
-                                    <tr key={transaction.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <div className={`p-2 rounded-full ${transaction.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-rose-100 text-rose-600'
-                                                    }`}>
-                                                    {transaction.isBooking ? (
-                                                        <TagIcon className="h-4 w-4" />
-                                                    ) : (
-                                                        <CurrencyDollarIcon className="h-4 w-4" />
-                                                    )}
-                                                </div>
-                                                <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {transaction.description}
-                                                    </div>
-                                                    {transaction.isBooking && (
-                                                        <div className="text-xs text-gray-500">
-                                                            Booking ID: {transaction.id.slice(-8).toUpperCase()}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-500 capitalize">
-                                                {transaction.category}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-500">
-                                                {transaction.date.toLocaleDateString()}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                                            <div className={`text-sm font-medium ${transaction.type === 'income' ? 'text-green-600' : 'text-rose-600'
-                                                }`}>
-                                                {transaction.type === 'income' ? '+' : '-'}${(transaction.amount || 0).toFixed(2)}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            {!transaction.isBooking && (
-                                                <div className="flex justify-end gap-2">
-                                                    <button
-                                                        onClick={() => handleEdit(transaction)}
-                                                        className="text-blue-600 hover:text-blue-900"
-                                                    >
-                                                        <PencilIcon className="h-4 w-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(transaction.id)}
-                                                        className="text-rose-600 hover:text-rose-900"
-                                                    >
-                                                        <TrashIcon className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </div>
     );
