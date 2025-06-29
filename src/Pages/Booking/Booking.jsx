@@ -12,6 +12,7 @@ import VehicleBooking from "./VehicleBooking/VehicleBooking";
 
 const Booking = () => {
     const axioxPublic = useAxiosPublic();
+
     const { data: hotels, isLoading, isError } = useQuery({
         queryKey: ["hotels"],
         queryFn: async () => {
@@ -20,6 +21,29 @@ const Booking = () => {
             return response.data;
         },
     });
+
+    // Load bus and train data after hotels are loaded
+    const { data: buses } = useQuery({
+        queryKey: ["buses"],
+        queryFn: async () => {
+            if (!hotels) return [];
+            const response = await axioxPublic.get("/buses");
+            return response.data;
+        },
+        enabled: !!hotels,
+    });
+
+    const { data: trains } = useQuery({
+        queryKey: ["trains"],
+        queryFn: async () => {
+            if (!hotels) return [];
+            const response = await axioxPublic.get("/trains");
+            return response.data;
+        },
+        enabled: !!hotels,
+    });
+    const vehicleData = { buses, trains };
+    console.log("from booking", vehicleData);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedOption, setSelectedOption] = useState("Hotel");
@@ -745,7 +769,10 @@ const Booking = () => {
                     </motion.div>
                 )}
 
-                {selectedOption === "Vehicle" && <VehicleBooking />}
+                {selectedOption === "Vehicle" && <VehicleBooking
+                    vehicleData={vehicleData}
+                />}
+                {/* {selectedOption === "Tour Guide" && <TourGuideBooking></TourGuideBooking>} */}
             </motion.div>
         </div>
     );

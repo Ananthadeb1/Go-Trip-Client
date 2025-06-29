@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import PaymentModal from "../HotelDetails/Components/BookingCard/PaymentModal/PaymentModal";
 import {
     faBus,
-    faPlane,
+    faTrain,
     faMapMarkerAlt,
     faCalendarDay,
     faUser,
@@ -17,7 +17,7 @@ import ReviewModal from "../HotelDetails/Components/BookingCard/ReviewModal/Revi
 
 // Sample data with more locations
 const locationSuggestions = [
-    "Dhaka", "Chittagong", "Cox's Bazar", "Sylhet", "Khulna",
+    "Dhaka", "Chattogram", "Cox's Bazar", "Sylhet", "Khulna",
     "Rajshahi", "Barisal", "Rangpur", "Mymensingh", "Comilla",
     "Narayanganj", "Gazipur", "Narsingdi", "Tangail", "Bogra",
     "Pabna", "Jessore", "Dinajpur", "Faridpur", "Kushtia",
@@ -29,92 +29,112 @@ const locationSuggestions = [
     "Khagrachari", "Rangamati", "Pirojpur", "Jhalokathi", "Barguna",
     "Bhola", "Panchagarh", "Thakurgaon", "Nilphamari", "Lalmonirhat",
     "Kurigram", "Gaibandha", "Joypurhat", "Naogaon", "Natore",
-    "Chapainawabganj", "Sirajganj", "Kishoreganj", "Rajbari",
-    "DAC (Hazrat Shahjalal Intl)", "CGP (Shah Amanat Intl)",
-    "ZYL (Osmany Intl)", "JSR (Jessore)", "RJH (Rajshahi)"
+    "Chapainawabganj", "Sirajganj", "Kishoreganj", "Rajbari"
 ];
 
-const vehicleData = {
-    buses: [
-        {
-            id: "bus1",
-            operator: "Green Line",
-            type: "AC Business Class",
-            departure: { time: "08:00 AM", location: "Dhaka" },
-            arrival: { time: "11:30 AM", location: "Kishoreganj" },
-            duration: "3h 30m",
-            price: 800,
-            seats: [
-                { id: "A1", status: "available" },
-                { id: "A2", status: "available" },
-                { id: "A3", status: "available" },
-                { id: "B1", status: "available" },
-                { id: "B2", status: "booked" },
-                { id: "B3", status: "available" },
-            ],
-            amenities: ["AC", "Reclining Seats", "TV", "Water"],
-            image: "https://example.com/bus1.jpg"
-        },
-        {
-            id: "bus2",
-            operator: "Shohagh Paribahan",
-            type: "Non-AC",
-            departure: { time: "10:00 AM", location: "Dhaka" },
-            arrival: { time: "01:30 PM", location: "Kishoreganj" },
-            duration: "3h 30m",
-            price: 500,
-            seats: [
-                { id: "S1", status: "available" },
-                { id: "S2", status: "available" },
-                { id: "S3", status: "available" },
-                { id: "S4", status: "booked" },
-            ],
-            amenities: ["Reclining Seats", "Water"],
-            image: "https://example.com/bus2.jpg"
-        },
-        // {
-        //     id: "bus3",
-        //     operator: "Hanif Enterprise",
-        //     type: "AC Business Class",
-        //     departure: { time: "02:00 PM", location: "Dhaka" },
-        //     arrival: { time: "05:30 PM", location: "Kishoreganj" },
-        //     duration: "3h 30m",
-        //     price: 900,
-        //     seats: [
-        //         { id: "C1", status: "available" },
-        //         { id: "C2", status: "available" },
-        //         { id: "C3", status: "booked" },
-        //         { id: "D1", status: "available" },
-        //         { id: "D2", status: "available" },
-        //     ],
-        //     amenities: ["AC", "Reclining Seats", "TV", "Water", "Snacks"],
-        //     image: "https://example.com/bus3.jpg"
-        // },
-        // {
-        //     id: "bus4",
-        //     operator: "Ena Transport",
-        //     type: "Non-AC",
-        //     departure: { time: "06:00 PM", location: "Dhaka" },
-        //     arrival: { time: "09:30 PM", location: "Kishoreganj" },
-        //     duration: "3h 30m",
-        //     price: 550,
-        //     seats: [
-        //         { id: "E1", status: "available" },
-        //         { id: "E2", status: "available" },
-        //         { id: "E3", status: "available" },
-        //         { id: "F1", status: "available" },
-        //         { id: "F2", status: "booked" },
-        //     ],
-        //     amenities: ["Reclining Seats", "Water"],
-        //     image: "https://example.com/bus4.jpg"
-        // }
-    ],
-    flights: [
-        // ... (keep the existing flight data)
-    ]
-};
+// const vehicleData = {
+//     buses: [
+//         {
+//             id: "ic1",
+//             operator: "Green Line",
+//             type: "Non-AC",
+//             departure: {
+//                 time: "01:49 PM",
+//                 location: "Faridpur"
+//             },
+//             arrival: {
+//                 time: "08:19 PM",
+//                 location: "Satkhira"
+//             },
+//             duration: "6h 30m",
+//             price: 618,
+//             seats: [
+//                 { id: "A1", status: "booked" },
+//                 { id: "A2", status: "available" },
+//                 { id: "A3", status: "available" },
+//                 { id: "B1", status: "available" },
+//                 { id: "B2", status: "available" },
+//                 { id: "B3", status: "available" }
+//             ],
+//             amenities: ["TV", "Water", "Reclining Seats"],
+//             image: "https://example.com/bus.jpg"
+//         },
+//         {
+//             id: "bus2",
+//             operator: "Shohagh Paribahan",
+//             type: "AC",
+//             departure: { time: "08:00 AM", location: "Dhaka" },
+//             arrival: { time: "11:30 AM", location: "Chittagong" },
+//             duration: "3h 30m",
+//             price: 1200,
+//             seats: [
+//                 { id: "A1", status: "available" },
+//                 { id: "A2", status: "available" },
+//                 { id: "A3", status: "booked" },
+//                 { id: "B1", status: "booked" },
+//                 { id: "B2", status: "available" },
+//             ],
+//             amenities: ["AC", "Reclining Seats", "TV", "Water", "Snacks"],
+//             image: "https://example.com/bus2.jpg"
+//         }
+//     ],
+//     trains: [
+//         {
+//             id: "train1",
+//             operator: "Subarna Express",
+//             type: "AC Chair",
+//             departure: {
+//                 time: "08:00 AM",
+//                 location: "Dhaka",
+//                 station: "Kamalapur Railway Station"
+//             },
+//             arrival: {
+//                 time: "11:30 AM",
+//                 location: "Chittagong",
+//                 station: "Chittagong Railway Station"
+//             },
+//             duration: "3h 30m",
+//             price: 800,
+//             seats: [
+//                 { id: "KA1", status: "available" },
+//                 { id: "KA2", status: "available" },
+//                 { id: "KA3", status: "booked" },
+//                 { id: "KB1", status: "available" },
+//                 { id: "KB2", status: "available" },
+//             ],
+//             amenities: ["AC", "Food Service", "Reading Light"],
+//             image: "https://example.com/train1.jpg"
+//         },
+//         {
+//             id: "train2",
+//             operator: "Mohanagar Provati",
+//             type: "Non-AC",
+//             departure: {
+//                 time: "06:30 AM",
+//                 location: "Dhaka",
+//                 station: "Kamalapur Railway Station"
+//             },
+//             arrival: {
+//                 time: "10:00 AM",
+//                 location: "Chittagong",
+//                 station: "Chittagong Railway Station"
+//             },
+//             duration: "3h 30m",
+//             price: 450,
+//             seats: [
+//                 { id: "SA1", status: "available" },
+//                 { id: "SA2", status: "booked" },
+//                 { id: "SA3", status: "available" },
+//                 { id: "SB1", status: "available" },
+//                 { id: "SB2", status: "available" },
+//             ],
+//             amenities: ["Fan", "Food Service"],
+//             image: "https://example.com/train2.jpg"
+//         }
+//     ]
+// };
 
-const VehicleBooking = () => {
+const VehicleBooking = ({ vehicleData }) => {
     const [step, setStep] = useState(1);
     const [searchParams, setSearchParams] = useState({
         from: "",
@@ -134,13 +154,13 @@ const VehicleBooking = () => {
     const [filteredVehicles, setFilteredVehicles] = useState([]);
     const [searchTriggered, setSearchTriggered] = useState(false);
 
-    //payment modal
+    // Payment modal state
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
     const [bookingSuccess, setBookingSuccess] = useState(false);
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [paymentError, setPaymentError] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [activePaymentMethod, setActivePaymentMethod] = useState(null)
+    const [activePaymentMethod, setActivePaymentMethod] = useState(null);
 
     // Refs for suggestion dropdowns
     const fromInputRef = useRef(null);
@@ -174,7 +194,7 @@ const VehicleBooking = () => {
                 ? vehicleData.buses.filter(v =>
                     v.departure.location.toLowerCase().includes(searchParams.from.toLowerCase()) &&
                     v.arrival.location.toLowerCase().includes(searchParams.to.toLowerCase()))
-                : vehicleData.flights.filter(v =>
+                : vehicleData.trains.filter(v =>
                     v.departure.location.toLowerCase().includes(searchParams.from.toLowerCase()) &&
                     v.arrival.location.toLowerCase().includes(searchParams.to.toLowerCase()));
 
@@ -377,7 +397,6 @@ const VehicleBooking = () => {
                     vehicleName={selectedVehicle ? selectedVehicle.operator : ""}
                     vehicleType={selectedVehicle ? selectedVehicle.type : ""}
                     favoriteSearches={favoriteSearches}
-
                 />
             )}
             {reviewModalOpen && (
@@ -531,14 +550,14 @@ const VehicleBooking = () => {
                                 </button>
                                 <button
                                     type="button"
-                                    className={`px-6 py-3 rounded-lg font-medium flex items-center ${searchParams.vehicleType === 'flight' ? 'bg-[#4285F4] text-white' : 'bg-gray-200 text-gray-700'}`}
+                                    className={`px-6 py-3 rounded-lg font-medium flex items-center ${searchParams.vehicleType === 'train' ? 'bg-[#4285F4] text-white' : 'bg-gray-200 text-gray-700'}`}
                                     onClick={() => {
-                                        setSearchParams({ ...searchParams, vehicleType: 'flight' });
+                                        setSearchParams({ ...searchParams, vehicleType: 'train' });
                                         setFilteredVehicles([]);
                                     }}
                                 >
-                                    <FontAwesomeIcon icon={faPlane} className="mr-2" />
-                                    Flight Tickets
+                                    <FontAwesomeIcon icon={faTrain} className="mr-2" />
+                                    Train Tickets
                                 </button>
                             </div>
 
@@ -546,7 +565,7 @@ const VehicleBooking = () => {
                                 type="submit"
                                 className="w-full bg-gradient-to-r from-[#FF2056] to-[#FF6B8B] text-white font-bold py-3 px-6 rounded-lg hover:shadow-lg transition-all"
                             >
-                                Search {searchParams.vehicleType === 'bus' ? 'Buses' : 'Flights'}
+                                Search {searchParams.vehicleType === 'bus' ? 'Buses' : 'Trains'}
                             </button>
                         </form>
 
@@ -591,15 +610,15 @@ const VehicleBooking = () => {
                 {/* Step 2: Vehicle Selection */}
                 {step === 2 && (
                     <div>
-                        <h2 className="text-2xl font-bold text-[#FF2056] mb-6">Available {searchParams.vehicleType === 'bus' ? 'Buses' : 'Flights'}</h2>
+                        <h2 className="text-2xl font-bold text-[#FF2056] mb-6">Available {searchParams.vehicleType === 'bus' ? 'Buses' : 'Trains'}</h2>
 
                         {noResults ? (
                             <div className="bg-[#E8F0FE] p-6 rounded-xl text-center">
                                 <div className="max-w-md mx-auto">
                                     <FontAwesomeIcon icon={faHeart} className="text-[#4285F4] text-4xl mb-4" />
-                                    <h3 className="text-xl font-bold text-[#4285F4] mb-2">No {searchParams.vehicleType === 'bus' ? 'buses' : 'flights'} found</h3>
+                                    <h3 className="text-xl font-bold text-[#4285F4] mb-2">No {searchParams.vehicleType === 'bus' ? 'buses' : 'trains'} found</h3>
                                     <p className="text-gray-600 mb-4">
-                                        We couldn't find any {searchParams.vehicleType === 'bus' ? 'buses' : 'flights'} matching your search criteria.
+                                        We couldn't find any {searchParams.vehicleType === 'bus' ? 'buses' : 'trains'} matching your search criteria.
                                     </p>
                                     <div className="flex justify-center space-x-4">
                                         <button
@@ -635,15 +654,11 @@ const VehicleBooking = () => {
                                             <div className="flex flex-col md:flex-row md:items-center justify-between">
                                                 <div className="flex items-center mb-4 md:mb-0">
                                                     <div className={`p-3 rounded-full mr-4 ${searchParams.vehicleType === 'bus' ? 'bg-[#FFEAEE] text-[#FF2056]' : 'bg-blue-100 text-[#4285F4]'}`}>
-                                                        <FontAwesomeIcon icon={searchParams.vehicleType === 'bus' ? faBus : faPlane} size="lg" />
+                                                        <FontAwesomeIcon icon={searchParams.vehicleType === 'bus' ? faBus : faTrain} size="lg" />
                                                     </div>
                                                     <div>
-                                                        <h3 className="font-bold text-lg">
-                                                            {searchParams.vehicleType === 'bus' ? vehicle.operator : vehicle.airline}
-                                                        </h3>
-                                                        <p className="text-gray-500">
-                                                            {searchParams.vehicleType === 'bus' ? vehicle.type : `Flight ${vehicle.flightNo}`}
-                                                        </p>
+                                                        <h3 className="font-bold text-lg">{vehicle.operator}</h3>
+                                                        <p className="text-gray-500">{vehicle.type}</p>
                                                     </div>
                                                 </div>
 
@@ -651,8 +666,8 @@ const VehicleBooking = () => {
                                                     <div className="text-center">
                                                         <p className="font-bold text-lg">{vehicle.departure.time}</p>
                                                         <p className="text-gray-600">{vehicle.departure.location}</p>
-                                                        {searchParams.vehicleType === 'flight' && (
-                                                            <p className="text-xs text-gray-500">{vehicle.departure.terminal}</p>
+                                                        {searchParams.vehicleType === 'train' && (
+                                                            <p className="text-xs text-gray-500">{vehicle.departure.station}</p>
                                                         )}
                                                     </div>
                                                     <div className="text-center px-4">
@@ -663,8 +678,8 @@ const VehicleBooking = () => {
                                                     <div className="text-center">
                                                         <p className="font-bold text-lg">{vehicle.arrival.time}</p>
                                                         <p className="text-gray-600">{vehicle.arrival.location}</p>
-                                                        {searchParams.vehicleType === 'flight' && (
-                                                            <p className="text-xs text-gray-500">{vehicle.arrival.terminal}</p>
+                                                        {searchParams.vehicleType === 'train' && (
+                                                            <p className="text-xs text-gray-500">{vehicle.arrival.station}</p>
                                                         )}
                                                     </div>
                                                     <div className="text-right">
@@ -748,15 +763,11 @@ const VehicleBooking = () => {
                                 <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
                                     <div className="flex items-center mb-3">
                                         <div className={`p-2 rounded-full mr-3 ${searchParams.vehicleType === 'bus' ? 'bg-[#FFEAEE] text-[#FF2056]' : 'bg-blue-100 text-[#4285F4]'}`}>
-                                            <FontAwesomeIcon icon={searchParams.vehicleType === 'bus' ? faBus : faPlane} />
+                                            <FontAwesomeIcon icon={searchParams.vehicleType === 'bus' ? faBus : faTrain} />
                                         </div>
                                         <div>
-                                            <h4 className="font-bold">
-                                                {searchParams.vehicleType === 'bus' ? selectedVehicle.operator : selectedVehicle.airline}
-                                            </h4>
-                                            <p className="text-sm text-gray-500">
-                                                {searchParams.vehicleType === 'bus' ? selectedVehicle.type : `Flight ${selectedVehicle.flightNo}`}
-                                            </p>
+                                            <h4 className="font-bold">{selectedVehicle.operator}</h4>
+                                            <p className="text-sm text-gray-500">{selectedVehicle.type}</p>
                                         </div>
                                     </div>
 
@@ -764,8 +775,8 @@ const VehicleBooking = () => {
                                         <div>
                                             <p className="font-bold">{selectedVehicle.departure.time}</p>
                                             <p className="text-gray-600">{selectedVehicle.departure.location}</p>
-                                            {searchParams.vehicleType === 'flight' && (
-                                                <p className="text-xs text-gray-500">{selectedVehicle.departure.terminal}</p>
+                                            {searchParams.vehicleType === 'train' && (
+                                                <p className="text-xs text-gray-500">{selectedVehicle.departure.station}</p>
                                             )}
                                         </div>
                                         <div className="text-center px-4">
@@ -774,8 +785,8 @@ const VehicleBooking = () => {
                                         <div className="text-right">
                                             <p className="font-bold">{selectedVehicle.arrival.time}</p>
                                             <p className="text-gray-600">{selectedVehicle.arrival.location}</p>
-                                            {searchParams.vehicleType === 'flight' && (
-                                                <p className="text-xs text-gray-500">{selectedVehicle.arrival.terminal}</p>
+                                            {searchParams.vehicleType === 'train' && (
+                                                <p className="text-xs text-gray-500">{selectedVehicle.arrival.station}</p>
                                             )}
                                         </div>
                                     </div>
