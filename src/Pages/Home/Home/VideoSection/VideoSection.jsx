@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/solid';
 import useAxiosPublic from '../../../../hooks/useAxiosPublic';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 
 const VideoSection = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -142,23 +143,19 @@ const VideoSection = () => {
                             </p>
 
                             <div className="flex flex-wrap gap-4">
-                                <motion.button
-                                    className="flex items-center gap-3 px-6 py-3 rounded-full transition-all duration-300 shadow-lg hover:shadow-[#FFEAEE]"
-                                    style={{
-                                        backgroundColor: '#FF2056',
-                                        color: '#fff'
-                                    }}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                >
-                                    <span className="font-medium">Explore Package</span>
-                                    <ArrowRightIcon className="w-5 h-5" />
-                                </motion.button>
-
-                                <button className="flex items-center gap-2 text-[#FF2056] hover:text-[#E61C4D] transition-colors group">
-                                    <span className="font-medium underline decoration-2 underline-offset-4">Watch Full Series</span>
-                                    <PlayIcon className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                                </button>
+                                <Link to={"/booking"}>
+                                    <motion.button
+                                        className="flex items-center gap-3 px-6 py-3 rounded-full transition-all duration-300 shadow-lg hover:shadow-[#FFEAEE]"
+                                        style={{
+                                            backgroundColor: '#FF2056',
+                                            color: '#fff'
+                                        }}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                    >
+                                        <span className="font-medium">Explore Bookings</span>
+                                        <ArrowRightIcon className="w-5 h-5" />
+                                    </motion.button></Link>
                             </div>
 
                             <div className="flex items-center gap-3 pt-4">

@@ -7,6 +7,7 @@ import {
 } from '@heroicons/react/24/solid';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
+import { Link } from 'react-router-dom';
 const Banner = () => {
     // Carousel settings
     const settings = {
@@ -85,14 +86,16 @@ const Banner = () => {
                                         animate={{ opacity: 1 }}
                                         transition={{ delay: 0.6 }}
                                     >
-                                        <motion.button
-                                            className="bg-rose-500 hover:bg-rose-600 text-white px-8 py-3 rounded-full flex items-center transition-all duration-300 hover:shadow-lg hover:shadow-rose-500/30"
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
-                                        >
-                                            Explore Destinations
-                                            <ArrowRightIcon className="w-5 h-5 ml-2" />
-                                        </motion.button>
+                                        <Link to={"/booking"}>
+                                            <motion.button
+                                                className="bg-rose-500 hover:bg-rose-600 text-white px-8 py-3 rounded-full flex items-center transition-all duration-300 hover:shadow-lg hover:shadow-rose-500/30"
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.95 }}
+                                            >
+                                                Explore Hotels
+                                                <ArrowRightIcon className="w-5 h-5 ml-2" />
+                                            </motion.button>
+                                        </Link>
                                     </motion.div>
                                 </motion.div>
                             </div>

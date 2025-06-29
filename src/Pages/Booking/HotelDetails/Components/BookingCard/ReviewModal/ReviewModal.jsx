@@ -66,7 +66,7 @@ const ReviewModal = ({ setReviewModalOpen }) => {
                             onClick={async () => {
                                 await AxiosPublic.patch(`/reviews/${loggedUser.uid}`, {
                                     userId: loggedUser?.uid,
-                                    userName: loggedUser?.name,
+                                    name: loggedUser?.name,
                                     rating: review.rating,
                                     comment: review.comment,
                                 });
