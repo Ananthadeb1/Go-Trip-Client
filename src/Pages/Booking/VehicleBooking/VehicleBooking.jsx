@@ -15,7 +15,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import DatePicker from "react-datepicker";
 import ReviewModal from "../HotelDetails/Components/BookingCard/ReviewModal/ReviewModal";
 
-// Sample data with more locations
 const locationSuggestions = [
     "Dhaka", "Chattogram", "Cox's Bazar", "Sylhet", "Khulna",
     "Rajshahi", "Barisal", "Rangpur", "Mymensingh", "Comilla",
@@ -31,108 +30,6 @@ const locationSuggestions = [
     "Kurigram", "Gaibandha", "Joypurhat", "Naogaon", "Natore",
     "Chapainawabganj", "Sirajganj", "Kishoreganj", "Rajbari"
 ];
-
-// const vehicleData = {
-//     buses: [
-//         {
-//             id: "ic1",
-//             operator: "Green Line",
-//             type: "Non-AC",
-//             departure: {
-//                 time: "01:49 PM",
-//                 location: "Faridpur"
-//             },
-//             arrival: {
-//                 time: "08:19 PM",
-//                 location: "Satkhira"
-//             },
-//             duration: "6h 30m",
-//             price: 618,
-//             seats: [
-//                 { id: "A1", status: "booked" },
-//                 { id: "A2", status: "available" },
-//                 { id: "A3", status: "available" },
-//                 { id: "B1", status: "available" },
-//                 { id: "B2", status: "available" },
-//                 { id: "B3", status: "available" }
-//             ],
-//             amenities: ["TV", "Water", "Reclining Seats"],
-//             image: "https://example.com/bus.jpg"
-//         },
-//         {
-//             id: "bus2",
-//             operator: "Shohagh Paribahan",
-//             type: "AC",
-//             departure: { time: "08:00 AM", location: "Dhaka" },
-//             arrival: { time: "11:30 AM", location: "Chittagong" },
-//             duration: "3h 30m",
-//             price: 1200,
-//             seats: [
-//                 { id: "A1", status: "available" },
-//                 { id: "A2", status: "available" },
-//                 { id: "A3", status: "booked" },
-//                 { id: "B1", status: "booked" },
-//                 { id: "B2", status: "available" },
-//             ],
-//             amenities: ["AC", "Reclining Seats", "TV", "Water", "Snacks"],
-//             image: "https://example.com/bus2.jpg"
-//         }
-//     ],
-//     trains: [
-//         {
-//             id: "train1",
-//             operator: "Subarna Express",
-//             type: "AC Chair",
-//             departure: {
-//                 time: "08:00 AM",
-//                 location: "Dhaka",
-//                 station: "Kamalapur Railway Station"
-//             },
-//             arrival: {
-//                 time: "11:30 AM",
-//                 location: "Chittagong",
-//                 station: "Chittagong Railway Station"
-//             },
-//             duration: "3h 30m",
-//             price: 800,
-//             seats: [
-//                 { id: "KA1", status: "available" },
-//                 { id: "KA2", status: "available" },
-//                 { id: "KA3", status: "booked" },
-//                 { id: "KB1", status: "available" },
-//                 { id: "KB2", status: "available" },
-//             ],
-//             amenities: ["AC", "Food Service", "Reading Light"],
-//             image: "https://example.com/train1.jpg"
-//         },
-//         {
-//             id: "train2",
-//             operator: "Mohanagar Provati",
-//             type: "Non-AC",
-//             departure: {
-//                 time: "06:30 AM",
-//                 location: "Dhaka",
-//                 station: "Kamalapur Railway Station"
-//             },
-//             arrival: {
-//                 time: "10:00 AM",
-//                 location: "Chittagong",
-//                 station: "Chittagong Railway Station"
-//             },
-//             duration: "3h 30m",
-//             price: 450,
-//             seats: [
-//                 { id: "SA1", status: "available" },
-//                 { id: "SA2", status: "booked" },
-//                 { id: "SA3", status: "available" },
-//                 { id: "SB1", status: "available" },
-//                 { id: "SB2", status: "available" },
-//             ],
-//             amenities: ["Fan", "Food Service"],
-//             image: "https://example.com/train2.jpg"
-//         }
-//     ]
-// };
 
 const VehicleBooking = ({ vehicleData }) => {
     const [step, setStep] = useState(1);
@@ -153,8 +50,6 @@ const VehicleBooking = ({ vehicleData }) => {
     const [noResults, setNoResults] = useState(false);
     const [filteredVehicles, setFilteredVehicles] = useState([]);
     const [searchTriggered, setSearchTriggered] = useState(false);
-
-    // Payment modal state
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
     const [bookingSuccess, setBookingSuccess] = useState(false);
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -162,48 +57,72 @@ const VehicleBooking = ({ vehicleData }) => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [activePaymentMethod, setActivePaymentMethod] = useState(null);
 
-    // Refs for suggestion dropdowns
     const fromInputRef = useRef(null);
     const toInputRef = useRef(null);
     const fromSuggestionsRef = useRef(null);
     const toSuggestionsRef = useRef(null);
 
-    // Load favorite searches from localStorage on component mount
     useEffect(() => {
         const savedFavorites = localStorage.getItem('favoriteSearches');
         if (savedFavorites) {
             setFavoriteSearches(JSON.parse(savedFavorites));
         }
 
-        // Add click outside listeners
         document.addEventListener('mousedown', handleClickOutside);
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
 
-    // Save favorite searches to localStorage when they change
     useEffect(() => {
         localStorage.setItem('favoriteSearches', JSON.stringify(favoriteSearches));
     }, [favoriteSearches]);
 
-    // Filter vehicles when search is triggered
     useEffect(() => {
         if (searchTriggered) {
+            const seenVehicles = new Set();
             const filtered = searchParams.vehicleType === "bus"
-                ? vehicleData.buses.filter(v =>
-                    v.departure.location.toLowerCase().includes(searchParams.from.toLowerCase()) &&
-                    v.arrival.location.toLowerCase().includes(searchParams.to.toLowerCase()))
-                : vehicleData.trains.filter(v =>
-                    v.departure.location.toLowerCase().includes(searchParams.from.toLowerCase()) &&
-                    v.arrival.location.toLowerCase().includes(searchParams.to.toLowerCase()));
+                ? vehicleData.buses.filter(v => {
+                    const isMatch = v.departure.location.toLowerCase().includes(searchParams.from.toLowerCase()) &&
+                        v.arrival.location.toLowerCase().includes(searchParams.to.toLowerCase());
+
+                    const vehicleKey = `${v.operator}-${v.departure.time}-${v.arrival.time}`;
+
+                    if (isMatch && !seenVehicles.has(vehicleKey)) {
+                        seenVehicles.add(vehicleKey);
+                        return true;
+                    }
+                    return false;
+                })
+                : vehicleData.trains.filter(v => {
+                    const isMatch = v.departure.location.toLowerCase().includes(searchParams.from.toLowerCase()) &&
+                        v.arrival.location.toLowerCase().includes(searchParams.to.toLowerCase());
+
+                    const vehicleKey = `${v.operator}-${v.departure.time}-${v.arrival.time}`;
+
+                    if (isMatch && !seenVehicles.has(vehicleKey)) {
+                        seenVehicles.add(vehicleKey);
+                        return true;
+                    }
+                    return false;
+                });
 
             setFilteredVehicles(filtered);
             setSearchTriggered(false);
         }
-    }, [searchTriggered, searchParams]);
+    }, [searchTriggered, searchParams, vehicleData]);
 
-    // Handle clicks outside suggestion boxes
+    useEffect(() => {
+        if (filteredVehicles.length === 0 && searchTriggered === false && searchParams.from && searchParams.to) {
+            setNoResults(true);
+        } else if (filteredVehicles.length > 0) {
+            setNoResults(false);
+            setStep(2);
+            setSelectedVehicle(null);
+            setSelectedSeats([]);
+        }
+    }, [filteredVehicles, searchTriggered]);
+
     const handleClickOutside = (event) => {
         if (fromSuggestionsRef.current && !fromSuggestionsRef.current.contains(event.target) &&
             fromInputRef.current && !fromInputRef.current.contains(event.target)) {
@@ -217,65 +136,35 @@ const VehicleBooking = ({ vehicleData }) => {
 
     const handleSearch = (e) => {
         e.preventDefault();
-        console.log("Search Params:", searchParams);
-        if (
-            searchParams.from &&
-            searchParams.to &&
-            searchParams.date &&
-            new Date(searchParams.date) >= new Date() &&
-            searchParams.passengers > 0
-        ) {
-            setStep(2);
-        }
-
-        // Validate date
         if (!searchParams.date || new Date(searchParams.date) < new Date()) {
             alert('Please select a valid future date');
             return;
         }
-
-        // Validate required fields
         if (!searchParams.from || !searchParams.to) {
             alert('Please fill in all required fields');
             return;
         }
-
         setSearchTriggered(true);
     };
-
-    useEffect(() => {
-        if (filteredVehicles.length === 0 && searchTriggered === false && searchParams.from && searchParams.to) {
-            setNoResults(true);
-        } else if (filteredVehicles.length > 0) {
-            setNoResults(false);
-            setStep(2);
-            setSelectedVehicle(null);
-            setSelectedSeats([]);
-        }
-    }, [filteredVehicles, searchTriggered]);
 
     const handleSeatSelection = (seatId) => {
         if (selectedSeats.includes(seatId)) {
             setSelectedSeats(selectedSeats.filter(id => id !== seatId));
-        } else {
-            if (selectedSeats.length < searchParams.passengers) {
-                setSelectedSeats([...selectedSeats, seatId]);
-            }
+        } else if (selectedSeats.length < searchParams.passengers) {
+            setSelectedSeats([...selectedSeats, seatId]);
         }
     };
 
     const calculateTotal = () => {
-        if (!selectedVehicle) return 0;
-        return selectedVehicle.price * selectedSeats.length;
+        return selectedVehicle ? selectedVehicle.price * selectedSeats.length : 0;
     };
 
     const handleFromInputChange = (value) => {
         setSearchParams({ ...searchParams, from: value });
         if (value.length > 0) {
-            const filtered = locationSuggestions.filter(loc =>
+            setFromSuggestions(locationSuggestions.filter(loc =>
                 loc.toLowerCase().includes(value.toLowerCase())
-            );
-            setFromSuggestions(filtered);
+            ));
             setShowFromSuggestions(true);
         } else {
             setFromSuggestions([]);
@@ -286,10 +175,9 @@ const VehicleBooking = ({ vehicleData }) => {
     const handleToInputChange = (value) => {
         setSearchParams({ ...searchParams, to: value });
         if (value.length > 0) {
-            const filtered = locationSuggestions.filter(loc =>
+            setToSuggestions(locationSuggestions.filter(loc =>
                 loc.toLowerCase().includes(value.toLowerCase())
-            );
-            setToSuggestions(filtered);
+            ));
             setShowToSuggestions(true);
         } else {
             setToSuggestions([]);
@@ -301,9 +189,7 @@ const VehicleBooking = ({ vehicleData }) => {
         setSearchParams(prev => ({ ...prev, [field]: value }));
         if (field === 'from') {
             setShowFromSuggestions(false);
-            if (toInputRef.current) {
-                toInputRef.current.focus();
-            }
+            toInputRef.current?.focus();
         } else {
             setShowToSuggestions(false);
         }
@@ -323,26 +209,6 @@ const VehicleBooking = ({ vehicleData }) => {
             fav.vehicleType === newFavorite.vehicleType
         )) {
             setFavoriteSearches([...favoriteSearches, newFavorite]);
-            // Show a small toast alert at the top instead of alert()
-            const toast = document.createElement('div');
-            toast.textContent = 'Search saved to favorites!';
-            toast.style.position = 'fixed';
-            toast.style.top = '32px';
-            toast.style.left = '50%';
-            toast.style.transform = 'translateX(-50%)';
-            toast.style.background = '#FF2056';
-            toast.style.color = '#fff';
-            toast.style.padding = '12px 24px';
-            toast.style.borderRadius = '8px';
-            toast.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-            toast.style.zIndex = 9999;
-            toast.style.fontWeight = 'bold';
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.style.transition = 'opacity 0.5s';
-                toast.style.opacity = '0';
-                setTimeout(() => document.body.removeChild(toast), 500);
-            }, 1500);
         }
     };
 
@@ -356,15 +222,11 @@ const VehicleBooking = ({ vehicleData }) => {
     };
 
     const removeFavorite = (index) => {
-        const newFavorites = [...favoriteSearches];
-        newFavorites.splice(index, 1);
-        setFavoriteSearches(newFavorites);
+        setFavoriteSearches(favoriteSearches.filter((_, i) => i !== index));
     };
 
     const handlePayment = () => {
-        const total = calculateTotal();
-        if (total > 0) {
-            // Show PaymentModal
+        if (calculateTotal() > 0) {
             setPaymentModalOpen(true);
             addToFavorites();
         } else {
@@ -388,25 +250,20 @@ const VehicleBooking = ({ vehicleData }) => {
                     setActivePaymentMethod={setActivePaymentMethod}
                     totalPrice={calculateTotal() + Math.round(selectedVehicle.price * 0.1)}
                     type={searchParams.vehicleType}
-                    vehicleId={selectedVehicle ? selectedVehicle.id : null}
+                    vehicleId={selectedVehicle?.id}
                     from={searchParams.from}
                     dest={searchParams.to}
-                    journeyDate={searchParams.date ? searchParams.date.toLocaleDateString() : ""}
+                    journeyDate={searchParams.date?.toLocaleDateString() || ""}
                     passengers={searchParams.passengers}
-                    selectedSeats={searchParams.selectedSeats}
-                    vehicleName={selectedVehicle ? selectedVehicle.operator : ""}
-                    vehicleType={selectedVehicle ? selectedVehicle.type : ""}
+                    selectedSeats={selectedSeats}
+                    vehicleName={selectedVehicle?.operator || ""}
+                    vehicleType={selectedVehicle?.type || ""}
                     favoriteSearches={favoriteSearches}
                 />
             )}
-            {reviewModalOpen && (
-                <ReviewModal
-                    setReviewModalOpen={setReviewModalOpen}
-                />
-            )}
+            {reviewModalOpen && <ReviewModal setReviewModalOpen={setReviewModalOpen} />}
 
             <div className="max-w-6xl mx-auto p-6 bg-white rounded-xl shadow-lg">
-                {/* Progress Steps */}
                 <div className="flex justify-between items-center mb-8 relative">
                     <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 -z-10"></div>
                     {[1, 2, 3].map((stepNumber) => (
@@ -422,7 +279,6 @@ const VehicleBooking = ({ vehicleData }) => {
                     ))}
                 </div>
 
-                {/* Step 1: Search Form */}
                 {step === 1 && (
                     <div className="bg-[#FFEAEE] p-6 rounded-xl">
                         <h2 className="text-2xl font-bold text-[#FF2056] mb-6">Book Your Journey</h2>
@@ -439,11 +295,7 @@ const VehicleBooking = ({ vehicleData }) => {
                                             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF2056] focus:border-[#FF2056]"
                                             value={searchParams.from}
                                             onChange={(e) => handleFromInputChange(e.target.value)}
-                                            onFocus={() => {
-                                                if (searchParams.from.length > 0) {
-                                                    setShowFromSuggestions(true);
-                                                }
-                                            }}
+                                            onFocus={() => setShowFromSuggestions(searchParams.from.length > 0)}
                                             required
                                         />
                                         {showFromSuggestions && fromSuggestions.length > 0 && (
@@ -477,11 +329,7 @@ const VehicleBooking = ({ vehicleData }) => {
                                             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF2056] focus:border-[#FF2056]"
                                             value={searchParams.to}
                                             onChange={(e) => handleToInputChange(e.target.value)}
-                                            onFocus={() => {
-                                                if (searchParams.to.length > 0) {
-                                                    setShowToSuggestions(true);
-                                                }
-                                            }}
+                                            onFocus={() => setShowToSuggestions(searchParams.to.length > 0)}
                                             required
                                         />
                                         {showToSuggestions && toSuggestions.length > 0 && (
@@ -540,10 +388,7 @@ const VehicleBooking = ({ vehicleData }) => {
                                 <button
                                     type="button"
                                     className={`px-6 py-3 rounded-lg font-medium flex items-center ${searchParams.vehicleType === 'bus' ? 'bg-[#FF2056] text-white' : 'bg-gray-200 text-gray-700'}`}
-                                    onClick={() => {
-                                        setSearchParams({ ...searchParams, vehicleType: 'bus' });
-                                        setFilteredVehicles([]);
-                                    }}
+                                    onClick={() => setSearchParams({ ...searchParams, vehicleType: 'bus' })}
                                 >
                                     <FontAwesomeIcon icon={faBus} className="mr-2" />
                                     Bus Tickets
@@ -551,10 +396,7 @@ const VehicleBooking = ({ vehicleData }) => {
                                 <button
                                     type="button"
                                     className={`px-6 py-3 rounded-lg font-medium flex items-center ${searchParams.vehicleType === 'train' ? 'bg-[#4285F4] text-white' : 'bg-gray-200 text-gray-700'}`}
-                                    onClick={() => {
-                                        setSearchParams({ ...searchParams, vehicleType: 'train' });
-                                        setFilteredVehicles([]);
-                                    }}
+                                    onClick={() => setSearchParams({ ...searchParams, vehicleType: 'train' })}
                                 >
                                     <FontAwesomeIcon icon={faTrain} className="mr-2" />
                                     Train Tickets
@@ -569,7 +411,6 @@ const VehicleBooking = ({ vehicleData }) => {
                             </button>
                         </form>
 
-                        {/* Favorite Searches Section */}
                         {favoriteSearches.length > 0 && (
                             <div className="mt-6">
                                 <h3 className="text-lg font-semibold mb-3 text-[#4285F4] flex items-center">
@@ -607,7 +448,6 @@ const VehicleBooking = ({ vehicleData }) => {
                     </div>
                 )}
 
-                {/* Step 2: Vehicle Selection */}
                 {step === 2 && (
                     <div>
                         <h2 className="text-2xl font-bold text-[#FF2056] mb-6">Available {searchParams.vehicleType === 'bus' ? 'Buses' : 'Trains'}</h2>
@@ -721,10 +561,7 @@ const VehicleBooking = ({ vehicleData }) => {
                                 <div className="flex justify-between mt-8">
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            setStep(1);
-                                            setNoResults(false);
-                                        }}
+                                        onClick={() => setStep(1)}
                                         className="px-6 py-2 border border-[#FF2056] text-[#FF2056] rounded-lg hover:bg-[#FFEAEE]"
                                     >
                                         Back
@@ -746,7 +583,6 @@ const VehicleBooking = ({ vehicleData }) => {
                     </div>
                 )}
 
-                {/* Step 3: Confirmation */}
                 {step === 3 && (
                     <div>
                         <div className="bg-green-100 border-l-4 border-green-500 p-4 mb-6">

@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import {
-    faBars, faTimes, faUsers, faConciergeBell,
-    faChartLine, faHotel, faCalendarAlt, faCog,
-    faBox, faDollarSign, faFileAlt
+    faBars, faTimes, faUsers,
+    faChartLine, faHotel, faCalendarAlt,
+    faDollarSign
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import UserManagement from './UserManagement/UserManagement';
-import ServiceManagement from './ServiceManagement/ServiceManagement';
+import BookingManagement from './UserManagement/BookingManagement/BookingManagement';
+import BillingManagement from './BillingManagement/BillingManagement';
+import Analytics from './BillingManagement/Analytics/Analytics';
 
 const Dashboard = () => {
     const [selected, setSelected] = useState('User Management');
@@ -14,9 +16,9 @@ const Dashboard = () => {
 
     const menuItems = [
         { name: 'User Management', icon: faUsers },
-        { name: 'Service Management', icon: faConciergeBell },
-        { name: 'Analytics', icon: faChartLine },
         { name: 'Bookings', icon: faCalendarAlt },
+        // { name: 'Service Management', icon: faConciergeBell },
+        { name: 'Analytics', icon: faChartLine },
         // { name: 'Inventory', icon: faBox },
         { name: 'Billing', icon: faDollarSign },
         // { name: 'Reports', icon: faFileAlt },
@@ -26,7 +28,9 @@ const Dashboard = () => {
     const renderComponent = () => {
         switch (selected) {
             case 'User Management': return <UserManagement />;
-            case 'Service Management': return <ServiceManagement />;
+            case 'Bookings': return <BookingManagement />;
+            case 'Analytics': return <Analytics />;
+            case 'Billing': return <BillingManagement />;
             default: return <UserManagement />;
         }
     };
