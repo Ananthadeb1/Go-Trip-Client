@@ -1,13 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { ClockIcon, XCircleIcon, MapPinIcon, BuildingOfficeIcon, TicketIcon, ArrowsRightLeftIcon, CalendarIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 import Swal from 'sweetalert2';
+import { useState, useMemo } from 'react';
 import useAuth from '../../../hooks/useAuth';
 import useAxiosPublic from '../../../hooks/useAxiosPublic';
-import { Link, Links } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const BookingStatusTab = () => {
     const { loggedUser } = useAuth();
     const axiosPublic = useAxiosPublic();
+    const [activeFilter, setActiveFilter] = useState('all');
 
     const { data: bookings = [], isLoading, isError, refetch } = useQuery({
         queryKey: ['bookings', loggedUser?._id],
@@ -24,6 +26,40 @@ const BookingStatusTab = () => {
         enabled: !!loggedUser?._id,
         staleTime: 1000 * 60 * 5,
         retry: 2,
+    });
+
+    // Get the current date for comparison
+    const currentDate = new Date();
+
+    // Filter out cancelled and expired bookings (only show active ones)
+    const activeBookings = useMemo(() => {
+        return bookings.filter(booking => {
+            // Check if booking is cancelled
+            const isCancelled = booking.status === 'cancelled' || booking.status === 'Canceled';
+            if (isCancelled) return false;
+
+            // Get the check-in/start date or journey date
+            let bookingDate = booking.startDate || booking.journeyDate || booking.date;
+
+            // If no date available, keep it as active
+            if (!bookingDate) return true;
+
+            const bookingDateTime = new Date(bookingDate);
+
+            // Check if booking is expired (date has passed)
+            const isExpired = bookingDateTime < currentDate;
+
+            // Only show if not expired
+            return !isExpired;
+        });
+    }, [bookings, currentDate]);
+
+    // Filter active bookings based on filter
+    const filteredBookings = activeBookings.filter(booking => {
+        if (activeFilter === 'all') return true;
+        if (activeFilter === 'hotel') return booking.type === 'hotel';
+        if (activeFilter === 'vehicle') return booking.type === 'bus' || booking.type === 'train';
+        return true;
     });
 
     const handleCancelBooking = async (bookingId, checkInDate) => {
@@ -98,15 +134,20 @@ const BookingStatusTab = () => {
             case 'hotel':
                 return (
                     <>
-                        <div className="flex items-center gap-2">
-                            <MapPinIcon className="h-4 w-4 text-gray-500" />
-                            <span>{booking.hotelLocation}</span>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <MapPinIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                            <span className="text-gray-500">Location</span>
+                            <span className="text-gray-900 ml-auto">{booking.hotelLocation}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <CalendarIcon className="h-4 w-4 text-gray-500" />
-                            <span>
-                                {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
-                                ({booking.nights} nights)
+                        <div className="flex items-center gap-2 text-sm text-gray-600 col-span-1 sm:col-span-2">
+                            <CalendarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                            <span className="text-gray-500">Check-IN Date</span>
+                            <span className="text-gray-900 ml-auto">
+                                {new Date(booking.startDate).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                })}
                             </span>
                         </div>
                     </>
@@ -115,21 +156,36 @@ const BookingStatusTab = () => {
             case 'train':
                 return (
                     <>
-                        <div className="flex items-center gap-2">
-                            <ArrowsRightLeftIcon className="h-4 w-4 text-gray-500" />
-                            <span>{booking.from} → {booking.dest}</span>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <ArrowsRightLeftIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                            <span className="text-gray-500">Route</span>
+                            <span className="text-gray-900 ml-auto">{booking.from} → {booking.dest}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <CalendarIcon className="h-4 w-4 text-gray-500" />
-                            <span>{new Date(booking.journeyDate).toLocaleString()}</span>
+                        <div className="flex items-center gap-2 text-sm text-gray-600 col-span-1 sm:col-span-2">
+                            <CalendarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                            <span className="text-gray-500">Journey Date</span>
+                            <span className="text-gray-900 ml-auto">
+                                {new Date(booking.journeyDate).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                })}
+                            </span>
                         </div>
                     </>
                 );
             default:
                 return (
-                    <div className="flex items-center gap-2">
-                        <CalendarIcon className="h-4 w-4 text-gray-500" />
-                        <span>{new Date(booking.date).toLocaleString()}</span>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 col-span-1 sm:col-span-2">
+                        <CalendarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <span className="text-gray-500">Date</span>
+                        <span className="text-gray-900 ml-auto">
+                            {new Date(booking.date).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                            })}
+                        </span>
                     </div>
                 );
         }
@@ -146,87 +202,130 @@ const BookingStatusTab = () => {
             <div className="inline-flex items-center justify-center bg-rose-100 rounded-full p-3 mb-4">
                 <XCircleIcon className="h-8 w-8 text-rose-600" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">No Data Avilable</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">No Data Available</h3>
             <p className="text-gray-500 mb-4">Book Something to look data</p>
             <Link to={"/booking"}>
-                <button
-
-                    className="px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 transition-colors"
-                >
+                <button className="px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 transition-colors">
                     Bookings
-                </button></Link>
+                </button>
+            </Link>
         </div>
     );
 
-    if (bookings.length === 0) return (
+    if (activeBookings.length === 0) return (
         <div className="text-center py-12">
             <div className="inline-flex items-center justify-center bg-blue-50 rounded-full p-3 mb-4">
                 <TicketIcon className="h-8 w-8 text-blue-600" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">No bookings found</h3>
-            <p className="text-gray-500">You haven't made any bookings yet</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">No active bookings</h3>
+            <p className="text-gray-500">You don't have any upcoming bookings</p>
+            <Link to="/booking">
+                <button className="mt-4 px-4 py-2 bg-rose-600 text-white rounded-md hover:bg-rose-700 transition-colors">
+                    Book Now
+                </button>
+            </Link>
         </div>
     );
 
     return (
-        <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6">Your Bookings</h2>
+        <div className="px-4 md:px-6 lg:px-8 space-y-6">
+            {/* Header */}
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Booking History</h2>
+                <p className="text-sm text-gray-500 mt-1">View all your travel bookings</p>
+            </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
-                {bookings.map(booking => {
+            {/* Filter Buttons */}
+            <div className="flex gap-2 md:gap-4 border-b border-gray-200 pb-3 overflow-x-auto">
+                <button
+                    onClick={() => setActiveFilter('all')}
+                    className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors relative ${activeFilter === 'all'
+                            ? 'text-rose-600 border-b-2 border-rose-600 -mb-[1px]'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                >
+                    All ({activeBookings.length})
+                </button>
+                <button
+                    onClick={() => setActiveFilter('hotel')}
+                    className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors relative ${activeFilter === 'hotel'
+                            ? 'text-rose-600 border-b-2 border-rose-600 -mb-[1px]'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                >
+                    Hotels ({activeBookings.filter(b => b.type === 'hotel').length})
+                </button>
+                <button
+                    onClick={() => setActiveFilter('vehicle')}
+                    className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors relative ${activeFilter === 'vehicle'
+                            ? 'text-rose-600 border-b-2 border-rose-600 -mb-[1px]'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                >
+                    Vehicles ({activeBookings.filter(b => b.type === 'bus' || b.type === 'train').length})
+                </button>
+            </div>
+
+            {/* Booking Cards */}
+            <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-1">
+                {filteredBookings.map(booking => {
+                    const isCancelled = booking.status === 'cancelled' || booking.status === 'Canceled';
 
                     return (
                         <div key={booking._id} className="border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                            <div className="p-5">
-                                <div className="flex justify-between items-start mb-4">
+                            <div className="p-4 md:p-5">
+                                {/* Header with name and status */}
+                                <div className="flex justify-between items-start mb-3">
                                     <div className="flex items-center gap-3">
                                         {renderBookingIcon(booking.type)}
                                         <div>
                                             <h3 className="font-semibold text-gray-800 capitalize">
-                                                {booking.type === 'hotel' ? booking.hotelName : booking.type === "bus" ? booking.vehicleName : booking.type === "train" ? booking.vehicleName : 'Other'} Booking
+                                                {booking.type === 'hotel' ? booking.hotelName : booking.type === "bus" ? booking.vehicleName : booking.type === "train" ? booking.vehicleName : 'Other'}
                                             </h3>
-                                            <p className="text-sm text-gray-500">
-                                                Booking ID: {booking._id.slice(-8).toUpperCase()}
+                                            <p className="text-xs text-gray-400 font-mono">
+                                                ID: {booking._id.slice(-8).toUpperCase()}
                                             </p>
                                         </div>
                                     </div>
-                                    <span className={`px-2 py-1 text-xs rounded-full ${booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                        booking.status === 'cancelled' ? 'bg-gray-100 text-gray-800' :
-                                            'bg-amber-100 text-amber-800'
+                                    <span className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${isCancelled
+                                            ? 'bg-red-50 text-red-600 border border-red-200'
+                                            : 'bg-green-50 text-green-600 border border-green-200'
                                         }`}>
                                         {booking.status}
                                     </span>
                                 </div>
 
-                                <div className="space-y-2 text-sm text-gray-600 mb-4">
+                                {/* Booking Details - Grid Layout */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4 mb-3">
+                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <CalendarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                        <span className="text-gray-500">Booking Date</span>
+                                        <span className="text-gray-900 ml-auto">
+                                            {new Date(booking.bookingTime).toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric',
+                                                year: 'numeric'
+                                            })}
+                                        </span>
+                                    </div>
+
                                     {renderBookingDetails(booking)}
 
-                                    <div className="flex items-center gap-2">
-                                        <ClockIcon className="h-4 w-4 text-gray-500" />
-                                        <span>Booked on {new Date(booking.bookingTime).toLocaleString()}</span>
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 col-span-1 sm:col-span-2">
+                                        <CurrencyDollarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                        <span className="text-gray-500">Total Cost</span>
+                                        <span className="text-gray-900 font-semibold ml-auto">
+                                            BDT {booking.totalCost?.toFixed(2)}
+                                        </span>
                                     </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <CurrencyDollarIcon className="h-4 w-4 text-gray-500" />
-                                        <span>Total: ${booking.totalCost?.toFixed(2)}</span>
-                                    </div>
-
-                                    {/* Show departure date if calculated */}
-                                    {booking.startDate && booking.nights && (
-                                        <div className="flex items-center gap-2">
-                                            <CalendarIcon className="h-4 w-4 text-gray-500" />
-                                            <span>
-                                                Departure: {booking.endDate instanceof Date ? booking.endDate.toLocaleDateString() : booking.endDate}
-                                            </span>
-                                        </div>
-                                    )}
                                 </div>
 
-                                {booking.status === 'confirmed' && (
-                                    <div className="flex justify-end">
+                                {/* Cancel Button */}
+                                {!isCancelled && booking.status === 'confirmed' && (
+                                    <div className="flex justify-end pt-3 border-t border-gray-100">
                                         <button
-                                            onClick={() => handleCancelBooking(booking._id, booking.startDate || booking.endDate || booking.date)}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white border border-rose-100 text-rose-600 rounded-md hover:bg-rose-50 transition-colors"
+                                            onClick={() => handleCancelBooking(booking._id, booking.startDate || booking.endDate || booking.date || booking.journeyDate)}
+                                            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
                                         >
                                             <XCircleIcon className="h-4 w-4" />
                                             Cancel Booking

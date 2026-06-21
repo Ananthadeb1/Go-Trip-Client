@@ -30,7 +30,12 @@ const NavBar = () => {
     const navLinks = [
         { path: "/", label: "Home" },
         { path: "/booking", label: "Booking" },
-        ...(isAdmin ? [{ path: "/dashboard", label: "Dashboard" }] : [])
+        ...(isAdmin ? [{ path: "/Dashboard", label: "Dashboard" }] : []),
+        // { path: "/itinerary", label: "Itinerary" },
+        ...(loggedUser ? [{ path: "/Itinerary", label: "Itinerary" }] : []),
+        ...(loggedUser ? [{ path: "/Booking_Status", label: "Booking Status" }] : []),
+        ...(loggedUser ? [{ path: "/History", label: "History" }] : []),
+        ...(loggedUser ? [{ path: "/Expense_Tracking", label: "Expense Tracking" }] : []),
     ];
 
     return (

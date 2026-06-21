@@ -4,9 +4,13 @@ import Swal from "sweetalert2";
 import { FiUser, FiMail, FiCalendar, FiShield, FiTrash2, FiEdit } from "react-icons/fi";
 import { MdAdminPanelSettings } from "react-icons/md";
 import { Tooltip } from "@mui/material";
+import { useEffect } from "react";
+import { useState } from "react";
+import useAxiosPublic from "../../../hooks/useAxiosPublic";
 
 const UserManagement = () => {
     const axiosSecure = useAxiosSecure();
+    const axiosPublic = useAxiosPublic();
     const { data: users = [], isLoading, refetch } = useQuery({
         queryKey: ['users'],
         queryFn: async () => {
@@ -14,6 +18,26 @@ const UserManagement = () => {
             return res.data;
         }
     });
+
+    const [bookingCounts, setBookingCounts] = useState({});
+
+    useEffect(() => {
+        const fetchBookingCounts = async () => {
+            try {
+                const res = await axiosPublic.get("/bookings");
+                const counts = {};
+                res.data.forEach((booking) => {
+                    const userId = booking.userId;
+                    counts[userId] = (counts[userId] || 0) + 1;
+                });
+                setBookingCounts(counts);
+            } catch (error) {
+                console.error("Error fetching booking counts:", error);
+                setBookingCounts({});
+            }
+        };
+        fetchBookingCounts();
+    }, [axiosPublic]);
 
     const handleMakeAdmin = (user) => {
         Swal.fire({
@@ -116,7 +140,6 @@ const UserManagement = () => {
     return (
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-gray-50">
-
                 <p className="text-gray-600 mt-2">Manage all registered users and their permissions</p>
             </div>
 
@@ -139,7 +162,7 @@ const UserManagement = () => {
                             <th scope="col" className="px-8 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
                                 <div className="flex items-center">
                                     <FiCalendar className="mr-3" size={18} />
-                                    Activity
+                                    Bookings
                                 </div>
                             </th>
                             <th scope="col" className="px-8 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
@@ -184,8 +207,8 @@ const UserManagement = () => {
                                     <div className="text-sm text-gray-500">{user.phone || 'No phone provided'}</div>
                                 </td>
                                 <td className="px-8 py-5 whitespace-nowrap">
-                                    <span className={`px-3 py-1.5 inline-flex text-sm leading-5 font-semibold rounded-full ${user.bookingHistory?.length > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                        {user.bookingHistory?.length || 0} bookings
+                                    <span className={`px-3 py-1.5 inline-flex text-sm leading-5 font-semibold rounded-full ${bookingCounts[user._id] > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                        {bookingCounts[user._id] || 0} bookings
                                     </span>
                                 </td>
                                 <td className="px-8 py-5 whitespace-nowrap">

@@ -11,6 +11,10 @@ import Dashboard from "../Pages/Dashboard/Dashboard";
 import HotelDetails from "../Pages/Booking/HotelDetails/HotelDetails";
 import UserProfile from "../Pages/UserProfile/UserProfile";
 import GoogleMap from "../Map/GoogleMap/GoogleMap";
+import Itinerary from "../Pages/UserProfile/Itinerary/Itinerary";
+import BookingStatusTab from "../Pages/UserProfile/BookingStatusTab/BookingStatusTab";
+import HistoryTab from "../Pages/UserProfile/HistoryTab/HistoryTab";
+import ExpenseTrackingTab from "../Pages/UserProfile/ExpenseTrackingTab/ExpenseTrackingTab";
 
 
 export const router = createBrowserRouter([
@@ -52,6 +56,36 @@ export const router = createBrowserRouter([
                 path: "/userProfile",
                 element: <PrivateRoute>
                     <UserProfile></UserProfile>
+                </PrivateRoute>
+            },
+            {
+                path: "/itinerary",
+                element: <PrivateRoute>
+                    <Itinerary></Itinerary>
+                </PrivateRoute>
+            },
+            {
+                path: "/itinerary",
+                element: <PrivateRoute>
+                    <Itinerary></Itinerary>
+                </PrivateRoute>
+            },
+            {
+                path: "/Booking_Status",
+                element: <PrivateRoute>
+                    <BookingStatusTab></BookingStatusTab>
+                </PrivateRoute>
+            },
+            {
+                path: "/History",
+                element: <PrivateRoute>
+                    <HistoryTab></HistoryTab>
+                </PrivateRoute>
+            },
+            {
+                path: "/Expense_Tracking",
+                element: <PrivateRoute>
+                    <ExpenseTrackingTab></ExpenseTrackingTab>
                 </PrivateRoute>
             },
             // {

@@ -2,11 +2,7 @@
 import { useState, useRef } from 'react';
 import { ChevronRightIcon, CameraIcon } from '@heroicons/react/24/solid';
 import useAuth from '../../hooks/useAuth';
-import Itinerary from './Itinerary/Itinerary';
 import ProfileTab from './ProfileTab/ProfileTab';
-import BookingStatusTab from './BookingStatusTab/BookingStatusTab';
-import HistoryTab from './HistoryTab/HistoryTab';
-import ExpenseTrackingTab from './ExpenseTrackingTab/ExpenseTrackingTab';
 import useAxiosSecure from '../../hooks/useAxiosSecure';
 import { useQueryClient } from '@tanstack/react-query';
 import Swal from 'sweetalert2';
@@ -22,10 +18,6 @@ const UserProfile = () => {
 
     const tabs = [
         'Profile',
-        'Itinerary',
-        'Booking Status',
-        'History',
-        'Expense Tracking',
     ];
 
     const handleImageUpload = async (e) => {
@@ -147,14 +139,6 @@ const UserProfile = () => {
                         }}
                     />
                 );
-            case 'Itinerary':
-                return <Itinerary trips={[]} />;
-            case 'Booking Status':
-                return <BookingStatusTab />;
-            case 'History':
-                return <HistoryTab />;
-            case 'Expense Tracking':
-                return <ExpenseTrackingTab />;
             default:
                 return null;
         }
