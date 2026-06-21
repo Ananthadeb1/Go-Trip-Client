@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClockIcon, XCircleIcon, MapPinIcon, BuildingOfficeIcon, TicketIcon, ArrowsRightLeftIcon, CalendarIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 import Swal from 'sweetalert2';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import useAuth from '../../../hooks/useAuth';
 import useAxiosPublic from '../../../hooks/useAxiosPublic';
 import { Link } from 'react-router-dom';
@@ -9,7 +9,26 @@ import { Link } from 'react-router-dom';
 const BookingStatusTab = () => {
     const { loggedUser } = useAuth();
     const axiosPublic = useAxiosPublic();
+    const queryClient = useQueryClient();
     const [activeFilter, setActiveFilter] = useState('all');
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    // Update current time every minute to check for expired bookings
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 60000); // Update every minute
+
+        return () => clearInterval(interval);
+    }, []);
+
+    // Refetch data when the component mounts or when the user changes
+    useEffect(() => {
+        if (loggedUser?._id) {
+            // Invalidate the query to ensure fresh data
+            queryClient.invalidateQueries(['bookings', loggedUser._id]);
+        }
+    }, [loggedUser?._id, queryClient]);
 
     const { data: bookings = [], isLoading, isError, refetch } = useQuery({
         queryKey: ['bookings', loggedUser?._id],
@@ -26,10 +45,11 @@ const BookingStatusTab = () => {
         enabled: !!loggedUser?._id,
         staleTime: 1000 * 60 * 5,
         retry: 2,
+        // Add refetch on window focus to catch new bookings
+        refetchOnWindowFocus: true,
+        // Refetch when the component mounts
+        refetchOnMount: true,
     });
-
-    // Get the current date for comparison
-    const currentDate = new Date();
 
     // Filter out cancelled and expired bookings (only show active ones)
     const activeBookings = useMemo(() => {
@@ -47,12 +67,12 @@ const BookingStatusTab = () => {
             const bookingDateTime = new Date(bookingDate);
 
             // Check if booking is expired (date has passed)
-            const isExpired = bookingDateTime < currentDate;
+            const isExpired = bookingDateTime < currentTime;
 
             // Only show if not expired
             return !isExpired;
         });
-    }, [bookings, currentDate]);
+    }, [bookings, currentTime]);
 
     // Filter active bookings based on filter
     const filteredBookings = activeBookings.filter(booking => {
@@ -99,6 +119,8 @@ const BookingStatusTab = () => {
         if (isConfirmed) {
             try {
                 await axiosPublic.patch(`/bookings/${bookingId}/cancel`);
+                // Invalidate and refetch queries
+                await queryClient.invalidateQueries(['bookings', loggedUser?._id]);
                 await refetch();
                 Swal.fire({
                     icon: 'success',
@@ -137,19 +159,40 @@ const BookingStatusTab = () => {
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                             <MapPinIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
                             <span className="text-gray-500">Location</span>
-                            <span className="text-gray-900 ml-auto">{booking.hotelLocation}</span>
+                            <span className="text-gray-900 ml-auto">{booking.hotelLocation || 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-600 col-span-1 sm:col-span-2">
                             <CalendarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
                             <span className="text-gray-500">Check-IN Date</span>
                             <span className="text-gray-900 ml-auto">
-                                {new Date(booking.startDate).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                })}
+                                {booking.startDate ?
+                                    new Date(booking.startDate).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                    }) :
+                                    'N/A'}
                             </span>
                         </div>
+                        {booking.endDate && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600 col-span-1 sm:col-span-2">
+                                <CalendarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                <span className="text-gray-500">Check-Out Date</span>
+                                <span className="text-gray-900 ml-auto">
+                                    {new Date(booking.endDate).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                    })}
+                                </span>
+                            </div>
+                        )}
+                        {booking.nights && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600 col-span-1 sm:col-span-2">
+                                <span className="text-gray-500">Nights</span>
+                                <span className="text-gray-900 ml-auto">{booking.nights} nights</span>
+                            </div>
+                        )}
                     </>
                 );
             case 'bus':
@@ -159,19 +202,28 @@ const BookingStatusTab = () => {
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                             <ArrowsRightLeftIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
                             <span className="text-gray-500">Route</span>
-                            <span className="text-gray-900 ml-auto">{booking.from} → {booking.dest}</span>
+                            <span className="text-gray-900 ml-auto">{booking.from || 'N/A'} → {booking.dest || 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-600 col-span-1 sm:col-span-2">
                             <CalendarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
                             <span className="text-gray-500">Journey Date</span>
                             <span className="text-gray-900 ml-auto">
-                                {new Date(booking.journeyDate).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                })}
+                                {booking.journeyDate ?
+                                    new Date(booking.journeyDate).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                    }) :
+                                    'N/A'}
                             </span>
                         </div>
+                        {booking.journeyTime && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600 col-span-1 sm:col-span-2">
+                                <ClockIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                <span className="text-gray-500">Departure Time</span>
+                                <span className="text-gray-900 ml-auto">{booking.journeyTime}</span>
+                            </div>
+                        )}
                     </>
                 );
             default:
@@ -180,11 +232,13 @@ const BookingStatusTab = () => {
                         <CalendarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
                         <span className="text-gray-500">Date</span>
                         <span className="text-gray-900 ml-auto">
-                            {new Date(booking.date).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric'
-                            })}
+                            {booking.date ?
+                                new Date(booking.date).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                }) :
+                                'N/A'}
                         </span>
                     </div>
                 );
@@ -230,9 +284,9 @@ const BookingStatusTab = () => {
     return (
         <div className="px-4 md:px-6 lg:px-8 space-y-6">
             {/* Header */}
-            <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Booking History</h2>
-                <p className="text-sm text-gray-500 mt-1">View all your travel bookings</p>
+            <div className="mb-6 pt-4 md:pt-8">
+                <h2 className="text-2xl font-bold text-gray-900">Booking Status</h2>
+                <p className="text-sm text-gray-500 mt-1">View all your upcoming bookings</p>
             </div>
 
             {/* Filter Buttons */}
@@ -240,8 +294,8 @@ const BookingStatusTab = () => {
                 <button
                     onClick={() => setActiveFilter('all')}
                     className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors relative ${activeFilter === 'all'
-                            ? 'text-rose-600 border-b-2 border-rose-600 -mb-[1px]'
-                            : 'text-gray-500 hover:text-gray-700'
+                        ? 'text-rose-600 border-b-2 border-rose-600 -mb-[1px]'
+                        : 'text-gray-500 hover:text-gray-700'
                         }`}
                 >
                     All ({activeBookings.length})
@@ -249,8 +303,8 @@ const BookingStatusTab = () => {
                 <button
                     onClick={() => setActiveFilter('hotel')}
                     className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors relative ${activeFilter === 'hotel'
-                            ? 'text-rose-600 border-b-2 border-rose-600 -mb-[1px]'
-                            : 'text-gray-500 hover:text-gray-700'
+                        ? 'text-rose-600 border-b-2 border-rose-600 -mb-[1px]'
+                        : 'text-gray-500 hover:text-gray-700'
                         }`}
                 >
                     Hotels ({activeBookings.filter(b => b.type === 'hotel').length})
@@ -258,8 +312,8 @@ const BookingStatusTab = () => {
                 <button
                     onClick={() => setActiveFilter('vehicle')}
                     className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors relative ${activeFilter === 'vehicle'
-                            ? 'text-rose-600 border-b-2 border-rose-600 -mb-[1px]'
-                            : 'text-gray-500 hover:text-gray-700'
+                        ? 'text-rose-600 border-b-2 border-rose-600 -mb-[1px]'
+                        : 'text-gray-500 hover:text-gray-700'
                         }`}
                 >
                     Vehicles ({activeBookings.filter(b => b.type === 'bus' || b.type === 'train').length})
@@ -288,8 +342,8 @@ const BookingStatusTab = () => {
                                         </div>
                                     </div>
                                     <span className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${isCancelled
-                                            ? 'bg-red-50 text-red-600 border border-red-200'
-                                            : 'bg-green-50 text-green-600 border border-green-200'
+                                        ? 'bg-red-50 text-red-600 border border-red-200'
+                                        : 'bg-green-50 text-green-600 border border-green-200'
                                         }`}>
                                         {booking.status}
                                     </span>
@@ -301,11 +355,13 @@ const BookingStatusTab = () => {
                                         <CalendarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
                                         <span className="text-gray-500">Booking Date</span>
                                         <span className="text-gray-900 ml-auto">
-                                            {new Date(booking.bookingTime).toLocaleDateString('en-US', {
-                                                month: 'short',
-                                                day: 'numeric',
-                                                year: 'numeric'
-                                            })}
+                                            {booking.bookingTime ?
+                                                new Date(booking.bookingTime).toLocaleDateString('en-US', {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    year: 'numeric'
+                                                }) :
+                                                'N/A'}
                                         </span>
                                     </div>
 
@@ -315,16 +371,19 @@ const BookingStatusTab = () => {
                                         <CurrencyDollarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
                                         <span className="text-gray-500">Total Cost</span>
                                         <span className="text-gray-900 font-semibold ml-auto">
-                                            BDT {booking.totalCost?.toFixed(2)}
+                                            BDT {booking.totalCost?.toFixed(2) || '0.00'}
                                         </span>
                                     </div>
                                 </div>
 
-                                {/* Cancel Button */}
+                                {/* Cancel Button - Only show for confirmed bookings */}
                                 {!isCancelled && booking.status === 'confirmed' && (
                                     <div className="flex justify-end pt-3 border-t border-gray-100">
                                         <button
-                                            onClick={() => handleCancelBooking(booking._id, booking.startDate || booking.endDate || booking.date || booking.journeyDate)}
+                                            onClick={() => handleCancelBooking(
+                                                booking._id,
+                                                booking.startDate || booking.journeyDate || booking.date
+                                            )}
                                             className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
                                         >
                                             <XCircleIcon className="h-4 w-4" />
