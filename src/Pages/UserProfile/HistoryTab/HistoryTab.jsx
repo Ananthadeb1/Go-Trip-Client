@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaHotel, FaTrain, FaBus, FaCalendarAlt, FaMoneyBillWave, FaTrash } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 import useAxiosPublic from '../../../hooks/useAxiosPublic';
@@ -7,33 +8,55 @@ import useAuth from '../../../hooks/useAuth';
 const HistoryTab = () => {
     const { loggedUser } = useAuth();
     const axiosPublic = useAxiosPublic();
-    const [bookings, setBookings] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const queryClient = useQueryClient();
     const [filter, setFilter] = useState('all'); // 'all', 'past', 'cancelled'
 
-    useEffect(() => {
-        const fetchBookings = async () => {
-            try {
-                const response = await axiosPublic.get(`/bookings/${loggedUser._id}`);
-                setBookings(response.data.map(booking => ({
-                    ...booking,
-                    bookingDate: booking.bookingTime ? new Date(booking.bookingTime) : null,
-                    startDate: booking.startDate ? new Date(booking.startDate) : null,
-                    endDate: booking.endDate ? new Date(booking.endDate) : null
-                })));
-                setLoading(false);
-            } catch (err) {
-                setError('Failed to load booking history');
-                setLoading(false);
-                console.error('Error fetching bookings:', err);
-            }
-        };
+    // ---- 1. Resolve the user's Mongo _id from their email ----
+    // Same query key as ExpenseTrackingTab's user lookup. If that tab (or
+    // this one) has already fetched it this session, it's read straight
+    // from cache here — no extra network round trip.
+    const { data: userData, isLoading: userLoading } = useQuery({
+        queryKey: ['user', loggedUser?.email],
+        queryFn: async () => (await axiosPublic.get(`/users/${loggedUser?.email}`)).data,
+        enabled: !!loggedUser?.email,
+        staleTime: 5 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
+    });
 
-        if (loggedUser?._id) {
-            fetchBookings();
-        }
-    }, [loggedUser?._id, axiosPublic]);
+    const userId = userData?._id || loggedUser?._id;
+
+    // ---- 2. Bookings, cached so revisiting this tab is instant ----
+    const {
+        data: rawBookings = [],
+        isLoading: bookingsLoading,
+        isError,
+    } = useQuery({
+        queryKey: ['bookings', userId],
+        queryFn: async () => (await axiosPublic.get(`/bookings/${userId}`)).data,
+        enabled: !!userId,
+        staleTime: 60 * 1000,
+        gcTime: 30 * 60 * 1000,
+    });
+
+    const bookings = useMemo(
+        () =>
+            rawBookings.map((booking) => ({
+                ...booking,
+                bookingDate: booking.bookingTime ? new Date(booking.bookingTime) : null,
+                startDate: booking.startDate ? new Date(booking.startDate) : null,
+                endDate: booking.endDate ? new Date(booking.endDate) : null,
+            })),
+        [rawBookings]
+    );
+
+    const loading = userLoading || bookingsLoading;
+    const error = isError ? 'Failed to load booking history' : null;
+
+    // ---- Delete mutation — invalidates cache instead of hand-editing state ----
+    const deleteMutation = useMutation({
+        mutationFn: (bookingId) => axiosPublic.delete(`/bookings/${bookingId}`),
+        onSuccess: () => queryClient.invalidateQueries(['bookings', userId]),
+    });
 
     const getBookingIcon = (type) => {
         switch ((type || '').toLowerCase()) {
@@ -108,9 +131,7 @@ const HistoryTab = () => {
 
         if (isConfirmed) {
             try {
-                await axiosPublic.delete(`/bookings/${bookingId}`);
-                // Remove from local state
-                setBookings(bookings.filter(booking => booking._id !== bookingId));
+                await deleteMutation.mutateAsync(bookingId);
                 Swal.fire({
                     icon: 'success',
                     title: 'Deleted Successfully',
@@ -173,8 +194,10 @@ const HistoryTab = () => {
 
     if (error) {
         return (
-            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
-                <p>{error}</p>
+            <div className="p-3 sm:p-4 lg:p-6 max-w-7xl mx-auto">
+                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded">
+                    <p>{error}</p>
+                </div>
             </div>
         );
     }
@@ -183,18 +206,18 @@ const HistoryTab = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <div className="max-w-6xl mx-auto p-4 md:p-8">
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto p-3 sm:p-4 lg:p-6">
+                <div className="text-center">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
                         Booking History
                     </h1>
-                    <p className="text-lg text-rose-600">
+                    <p className="text-base sm:text-lg text-rose-600">
                         View your past and cancelled bookings
                     </p>
                 </div>
 
                 {/* Filter Controls */}
-                <div className="bg-white rounded-xl shadow-sm p-4 mb-6 flex flex-wrap gap-2">
+                <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 flex flex-wrap gap-2">
                     {['all', 'past', 'cancelled'].map((f) => {
                         let label = f;
                         if (f === 'all') label = 'All History';
@@ -205,9 +228,9 @@ const HistoryTab = () => {
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
-                                className={`px-4 py-2 rounded-lg capitalize transition-colors ${filter === f
-                                        ? 'bg-rose-600 text-white'
-                                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg capitalize text-sm sm:text-base transition-colors ${filter === f
+                                    ? 'bg-rose-600 text-white'
+                                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                                     }`}
                             >
                                 {label}
@@ -225,14 +248,14 @@ const HistoryTab = () => {
 
                             return (
                                 <div key={booking._id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                                    <div className="p-6">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="flex items-center gap-4">
-                                                <div className="text-2xl">
+                                    <div className="p-4 sm:p-6">
+                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4">
+                                            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                                                <div className="text-2xl shrink-0">
                                                     {getBookingIcon(booking.type)}
                                                 </div>
-                                                <div>
-                                                    <h2 className="text-xl font-bold text-gray-800">
+                                                <div className="min-w-0">
+                                                    <h2 className="text-lg sm:text-xl font-bold text-gray-800 truncate">
                                                         {bookingName}
                                                     </h2>
                                                     <p className="text-sm text-gray-500">
@@ -240,8 +263,8 @@ const HistoryTab = () => {
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(booking.status)}`}>
+                                            <div className="flex items-center gap-3 shrink-0">
+                                                <span className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap ${getStatusColor(booking.status)}`}>
                                                     {statusText}
                                                 </span>
                                                 <button
@@ -254,10 +277,10 @@ const HistoryTab = () => {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                             <div className="space-y-3">
                                                 <div className="flex items-center gap-3">
-                                                    <FaCalendarAlt className="text-gray-400" />
+                                                    <FaCalendarAlt className="text-gray-400 shrink-0" />
                                                     <div>
                                                         <p className="text-sm text-gray-500">Booking Date</p>
                                                         <p className="font-medium">{formatDate(booking.bookingTime ? new Date(booking.bookingTime) : null)}</p>
@@ -265,7 +288,7 @@ const HistoryTab = () => {
                                                 </div>
                                                 {booking.startDate && (
                                                     <div className="flex items-center gap-3">
-                                                        <FaCalendarAlt className="text-gray-400" />
+                                                        <FaCalendarAlt className="text-gray-400 shrink-0" />
                                                         <div>
                                                             <p className="text-sm text-gray-500">Check-IN Date</p>
                                                             <p className="font-medium">{formatDate(booking.startDate)}</p>
@@ -274,7 +297,7 @@ const HistoryTab = () => {
                                                 )}
                                                 {booking.journeyDate && (
                                                     <div className="flex items-center gap-3">
-                                                        <FaCalendarAlt className="text-gray-400" />
+                                                        <FaCalendarAlt className="text-gray-400 shrink-0" />
                                                         <div>
                                                             <p className="text-sm text-gray-500">Travel Date</p>
                                                             <p className="font-medium">{formatDate(new Date(booking.journeyDate))}</p>
@@ -283,7 +306,7 @@ const HistoryTab = () => {
                                                 )}
                                                 {booking.endDate && (
                                                     <div className="flex items-center gap-3">
-                                                        <FaCalendarAlt className="text-gray-400" />
+                                                        <FaCalendarAlt className="text-gray-400 shrink-0" />
                                                         <div>
                                                             <p className="text-sm text-gray-500">Check-Out Date</p>
                                                             <p className="font-medium">{formatDate(booking.endDate)}</p>
@@ -294,7 +317,7 @@ const HistoryTab = () => {
 
                                             <div className="space-y-3">
                                                 <div className="flex items-center gap-3">
-                                                    <FaMoneyBillWave className="text-gray-400" />
+                                                    <FaMoneyBillWave className="text-gray-400 shrink-0" />
                                                     <div>
                                                         <p className="text-sm text-gray-500">Total Cost</p>
                                                         <p className="font-medium text-lg text-gray-900">BDT {(booking.totalCost || 0).toFixed(2)}</p>
@@ -302,7 +325,7 @@ const HistoryTab = () => {
                                                 </div>
                                                 {booking.status === 'cancelled' && booking.refundAmount && (
                                                     <div className="flex items-center gap-3">
-                                                        <FaMoneyBillWave className="text-green-400" />
+                                                        <FaMoneyBillWave className="text-green-400 shrink-0" />
                                                         <div>
                                                             <p className="text-sm text-gray-500">Refund Amount</p>
                                                             <p className="font-medium text-green-600">BDT {(booking.refundAmount || 0).toFixed(2)}</p>
@@ -316,9 +339,9 @@ const HistoryTab = () => {
                             );
                         })
                     ) : (
-                        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-                            <div className="text-6xl mb-4">📋</div>
-                            <h3 className="text-xl font-semibold text-gray-700 mb-2">No History Found</h3>
+                        <div className="bg-white rounded-xl shadow-sm p-8 sm:p-12 text-center">
+                            <div className="text-5xl sm:text-6xl mb-4">📋</div>
+                            <h3 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">No History Found</h3>
                             <p className="text-gray-500 mb-4">
                                 {filter === 'all'
                                     ? 'No past or cancelled bookings found'

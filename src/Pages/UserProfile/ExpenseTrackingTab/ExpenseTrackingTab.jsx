@@ -84,10 +84,17 @@ const ExpenseTrackingTab = () => {
     const queryClient = useQueryClient();
 
     // ---- 1. Resolve the user's Mongo _id from their email ----
+    // staleTime/gcTime are long on purpose: this mapping almost never
+    // changes, and using the SAME query key ['user', email] that other
+    // tabs (e.g. HistoryTab) use means whichever tab loads first "pays"
+    // for this request once — every other tab reads it from cache for
+    // free, with zero network round trips.
     const { data: userData, isLoading: userLoading } = useQuery({
         queryKey: ['user', loggedUser?.email],
         queryFn: async () => (await axiosPublic.get(`/users/${loggedUser?.email}`)).data,
         enabled: !!loggedUser?.email,
+        staleTime: 5 * 60 * 1000, // 5 min — don't refetch while the session is active
+        gcTime: 30 * 60 * 1000,   // keep it cached across tab switches
     });
 
     const userId = userData?._id;
@@ -104,7 +111,8 @@ const ExpenseTrackingTab = () => {
         queryKey: ['tours', userId],
         queryFn: async () => (await axiosPublic.get(`/tours/${userId}`)).data,
         enabled: !!userId,
-        staleTime: 60 * 1000, // avoid refetching on every tab switch
+        staleTime: 60 * 1000,     // avoid refetching on every tab switch
+        gcTime: 30 * 60 * 1000,   // keep cached data around instead of dropping it
     });
 
     // ---- UI state ----
