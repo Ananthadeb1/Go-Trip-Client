@@ -26,7 +26,16 @@ const SocialLogin = () => {
                         };
                         return axiosPublic.post("/users", userInfo);
                     })
-                    .then(() => {
+                    .then(async () => {  // ADD 'async' HERE
+                        // ADD THIS - Get JWT token
+                        const response = await axiosPublic.post('/jwt', {
+                            email: loggedUser.email,
+                            name: loggedUser.displayName
+                        });
+                        const token = response.data.token;
+                        localStorage.setItem('accessToken', token);
+                        console.log('JWT Token stored:', token);
+
                         navigate(from, { replace: true });
                     });
             })

@@ -10,6 +10,7 @@ import VideoSection from './VideoSection/VideoSection';
 import Banner from './Banner/Banner';
 import useAxiosPublic from '../../../hooks/useAxiosPublic';
 import { useEffect, useState } from 'react';
+import useAuth from '../../../hooks/useAuth';
 
 // const fadeInUp = {
 //     hidden: { opacity: 0, y: 40 },
@@ -60,6 +61,8 @@ const Home = () => {
 
     const [reviews, setReviews] = useState([]);
     const [activeIndex, setActiveIndex] = useState(0);
+    const { loggedUser } = useAuth();
+    loggedUser ? console.log(loggedUser.email) : console.log("no user");
 
     useEffect(() => {
         axiosPublic.get('/reviews')

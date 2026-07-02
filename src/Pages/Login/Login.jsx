@@ -4,8 +4,10 @@ import useAuth from '../../hooks/useAuth';
 import { useState } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import useAxiosPublic from '../../hooks/useAxiosPublic';  // ADD THIS AT TOP
 
 const Login = () => {
+    const axiosPublic = useAxiosPublic(); // ADD THIS inside component
     const { login, setUser } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -41,10 +43,19 @@ const Login = () => {
         }
 
         login(email, password)
-            .then(result => {
+            .then(async (result) => {
                 const user = result.user;
                 console.log(user);
                 setUser(user);
+
+                // ADD THIS - Get JWT token
+                const response = await axiosPublic.post('/jwt', {
+                    email: user.email,
+                    name: user.displayName || user.name
+                });
+                const token = response.data.token;
+                localStorage.setItem('accessToken', token);
+
                 navigate(from, { replace: true });
             })
             .catch(error => {
@@ -94,7 +105,7 @@ const Login = () => {
                 <SocialLogin></SocialLogin>
                 <div>
                     <p className="text-center text-sm text-gray-600 mt-6">
-                        New Here? <Link to={"/signup"} className="text-blue-500 hover:underline">create an account</Link>
+                        New Here? <Link to={"/signup"} state={{ from: location.state?.from || location }} className="text-blue-500 hover:underline">create an account</Link>
                     </p>
                 </div>
             </div>
