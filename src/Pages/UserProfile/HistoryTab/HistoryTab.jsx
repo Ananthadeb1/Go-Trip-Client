@@ -11,21 +11,10 @@ const HistoryTab = () => {
     const queryClient = useQueryClient();
     const [filter, setFilter] = useState('all'); // 'all', 'past', 'cancelled'
 
-    // ---- 1. Resolve the user's Mongo _id from their email ----
-    // Same query key as ExpenseTrackingTab's user lookup. If that tab (or
-    // this one) has already fetched it this session, it's read straight
-    // from cache here — no extra network round trip.
-    const { data: userData, isLoading: userLoading } = useQuery({
-        queryKey: ['user', loggedUser?.email],
-        queryFn: async () => (await axiosPublic.get(`/users/${loggedUser?.email}`)).data,
-        enabled: !!loggedUser?.email,
-        staleTime: 5 * 60 * 1000,
-        gcTime: 30 * 60 * 1000,
-    });
+    // ---- Use the id already on loggedUser — no separate /users/:email lookup ----
+    const userId = loggedUser?._id;
 
-    const userId = userData?._id || loggedUser?._id;
-
-    // ---- 2. Bookings, cached so revisiting this tab is instant ----
+    // ---- Bookings, cached so revisiting this tab is instant ----
     const {
         data: rawBookings = [],
         isLoading: bookingsLoading,
@@ -49,7 +38,7 @@ const HistoryTab = () => {
         [rawBookings]
     );
 
-    const loading = userLoading || bookingsLoading;
+    const loading = bookingsLoading;
     const error = isError ? 'Failed to load booking history' : null;
 
     // ---- Delete mutation — invalidates cache instead of hand-editing state ----
@@ -67,26 +56,23 @@ const HistoryTab = () => {
         }
     };
 
-    const filterBookings = () => {
+    // ---- Memoized so this only recomputes when bookings or filter actually change ----
+    const filteredBookings = useMemo(() => {
         const now = new Date();
-        // First filter the bookings
+
         const filtered = bookings.filter(booking => {
-            // Get the start/journey date
             const startDate = booking.journeyDate
                 ? new Date(booking.journeyDate)
                 : booking.startDate
                     ? booking.startDate
                     : null;
 
-            // Only show past or cancelled bookings (exclude upcoming)
             const isUpcoming = startDate && startDate > now;
 
-            // If booking is upcoming and not cancelled, exclude it
             if (isUpcoming && booking.status !== 'cancelled') {
                 return false;
             }
 
-            // Apply filter
             switch (filter) {
                 case 'past':
                     return booking.status !== 'cancelled' && !isUpcoming;
@@ -97,9 +83,7 @@ const HistoryTab = () => {
             }
         });
 
-        // Sort from recent to oldest (most recent first)
         return filtered.sort((a, b) => {
-            // Get the date to sort by (use bookingTime or startDate or journeyDate)
             const dateA = a.bookingTime || a.startDate || a.journeyDate || a.date;
             const dateB = b.bookingTime || b.startDate || b.journeyDate || b.date;
 
@@ -108,7 +92,7 @@ const HistoryTab = () => {
 
             return new Date(dateB) - new Date(dateA);
         });
-    };
+    }, [bookings, filter]);
 
     const handleDeleteBooking = async (bookingId, bookingName) => {
         const { isConfirmed } = await Swal.fire({
@@ -201,8 +185,6 @@ const HistoryTab = () => {
             </div>
         );
     }
-
-    const filteredBookings = filterBookings();
 
     return (
         <div className="min-h-screen bg-gray-50">

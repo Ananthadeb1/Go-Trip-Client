@@ -83,23 +83,10 @@ const ExpenseTrackingTab = () => {
     const axiosPublic = useAxiosPublic();
     const queryClient = useQueryClient();
 
-    // ---- 1. Resolve the user's Mongo _id from their email ----
-    // staleTime/gcTime are long on purpose: this mapping almost never
-    // changes, and using the SAME query key ['user', email] that other
-    // tabs (e.g. HistoryTab) use means whichever tab loads first "pays"
-    // for this request once — every other tab reads it from cache for
-    // free, with zero network round trips.
-    const { data: userData, isLoading: userLoading } = useQuery({
-        queryKey: ['user', loggedUser?.email],
-        queryFn: async () => (await axiosPublic.get(`/users/${loggedUser?.email}`)).data,
-        enabled: !!loggedUser?.email,
-        staleTime: 5 * 60 * 1000, // 5 min — don't refetch while the session is active
-        gcTime: 30 * 60 * 1000,   // keep it cached across tab switches
-    });
+    // ---- Use the id already on loggedUser — no separate /users/:email lookup ----
+    const userId = loggedUser?._id;
 
-    const userId = userData?._id;
-
-    // ---- 2. ONE query for everything: tours + their embedded expenses ----
+    // ---- ONE query for everything: tours + their embedded expenses ----
     // No separate /bookings or /expenses fetch on load, and no client-side
     // merge/dedupe logic. Hotel tours are created server-side at booking time.
     const {
@@ -316,7 +303,7 @@ const ExpenseTrackingTab = () => {
     };
 
     // ---- Loading / error states ----
-    if (userLoading || toursLoading) return (
+    if (toursLoading) return (
         <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
         </div>
