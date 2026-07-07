@@ -143,7 +143,34 @@ const ItineraryGenerator = () => {
                     model: "deepseek/deepseek-chat",
                     messages: [{
                         role: "user",
-                        content: `Create a ${days}-day itinerary for ${location}, Bangladesh in JSON format. Structure: { itinerary: { day1: { morning: { activity, description, duration, location }, ... } }`
+                        content: `You are an expert local travel guide for Bangladesh with deep knowledge of ${location}.
+
+Create a detailed ${days}-day travel itinerary for ${location}, Bangladesh.
+
+Requirements:
+- Each day should have a logical geographic flow (minimize backtracking between locations)
+- Include a mix of must-see attractions, local food experiences, and authentic cultural activities
+- Activities should be realistic given typical opening hours, travel time, and local context
+- Use specific, real place names (actual landmarks, restaurants, neighborhoods) rather than generic descriptions
+- Vary the pace across days — don't overload any single day
+- Consider local weather, prayer times, and cultural norms when relevant to timing
+- Description should be 1-2 sentences giving a visitor practical, useful context (not just marketing language)
+- Duration should be realistic (e.g. "1.5 hours", "45 minutes", "2-3 hours")
+- Location should include enough detail to actually find the place (area/neighborhood name)
+
+Return ONLY valid JSON with no markdown formatting, no code fences, and no explanatory text before or after — the response must be directly parseable by JSON.parse().
+
+Use this exact structure:
+{
+  "itinerary": {
+    "day1": {
+      "morning": { "activity": "string", "description": "string", "duration": "string", "location": "string" },
+      "afternoon": { "activity": "string", "description": "string", "duration": "string", "location": "string" },
+      "evening": { "activity": "string", "description": "string", "duration": "string", "location": "string" }
+    }
+    // continue for day2, day3, etc. up to day${days}
+  }
+}`
                     }],
                     temperature: 0.7
                 },
