@@ -11,6 +11,7 @@ const ProfileTab = ({ user, onEdit }) => {
     const axiosSecure = useAxiosSecure();
     const queryClient = useQueryClient();
     const { loggedUser, fetchUserData } = useAuth()
+    
 
     const handleEditClick = () => {
         setIsEditing(!isEditing);
@@ -135,6 +136,15 @@ const ProfileTab = ({ user, onEdit }) => {
                         </button>
                     )}
                 </div>
+
+                {/* Gmail Field */}
+                <div className="border-b border-gray-200 pb-4 flex justify-between items-center">
+                    <div>
+                        <h3 className="text-sm font-medium text-gray-500 mb-2">GMAIL</h3>
+                            <p className="text-gray-800">{loggedUser.email || 'Not provided'}</p>
+                    </div>
+                </div>
+                
 
                 {/* Birthday Field */}
                 <div className="border-b border-gray-200 pb-4 flex justify-between items-center">
