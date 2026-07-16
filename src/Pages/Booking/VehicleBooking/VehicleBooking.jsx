@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import Swal from "sweetalert2";
 import PaymentModal from "../HotelDetails/Components/BookingCard/PaymentModal/PaymentModal";
 import {
     faBus,
@@ -30,6 +31,131 @@ const locationSuggestions = [
     "Kurigram", "Gaibandha", "Joypurhat", "Naogaon", "Natore",
     "Chapainawabganj", "Sirajganj", "Kishoreganj", "Rajbari"
 ];
+
+// ---------------------------------------------------------------------------
+// Helpers: deterministic route + seat generation so that every one of the
+// 64 districts has a connection to every other district, even if no static
+// vehicle entry exists for that exact pair in vehicleData.
+// ---------------------------------------------------------------------------
+
+const hashCode = (str) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+    }
+    return Math.abs(hash);
+};
+
+const busOperatorNames = [
+    "Green Line Paribahan", "Hanif Enterprise", "Shyamoli NR Travels",
+    "Ena Transport", "Soudia Coach Service", "Desh Travels",
+    "SR Travels", "Nabil Paribahan"
+];
+
+const trainNames = [
+    "Subarna Express", "Sonar Bangla Express", "Egarosindur Express",
+    "Mohanagar Provati", "Turna Nishitha", "Parabat Express",
+    "Ekota Express", "Chitra Express"
+];
+
+// Generates a seat map. Bus = 2+2 layout (A,B | aisle | C,D).
+// Train = 3+2 layout (A,B,C | aisle | D,E), matching common BD railway coaches.
+const generateSeatLayout = (type, bookedRatio = 0.35) => {
+    const seats = [];
+    const rows = 10;
+    const cols = type === "bus" ? ["A", "B", "C", "D"] : ["A", "B", "C", "D", "E"];
+
+    for (let r = 1; r <= rows; r++) {
+        cols.forEach((col, idx) => {
+            seats.push({
+                id: `${r}${col}`,
+                row: r,
+                col: idx,
+                status: Math.random() < bookedRatio ? "booked" : "available"
+            });
+        });
+    }
+    return seats;
+};
+
+// Static vehicleData entries may store seats in an old flat format
+// ({id, status} with no row/col), which the row-based seat map below can't
+// render. This guarantees every vehicle — static or generated — has a
+// proper 2D layout, while preserving any pre-existing booked seats by id.
+const normalizeVehicleSeats = (vehicle, vehicleType) => {
+    const hasProperLayout = Array.isArray(vehicle.seats) &&
+        vehicle.seats.length > 0 &&
+        typeof vehicle.seats[0].row === 'number';
+
+    if (hasProperLayout) return vehicle;
+
+    const layout = generateSeatLayout(vehicleType);
+
+    if (Array.isArray(vehicle.seats)) {
+        const bookedIds = new Set(
+            vehicle.seats.filter(s => s.status === 'booked').map(s => s.id)
+        );
+        layout.forEach(seat => {
+            if (bookedIds.has(seat.id)) seat.status = 'booked';
+        });
+    }
+
+    return { ...vehicle, seats: layout };
+};
+
+const formatTime = (h) => {
+    const period = h >= 12 ? "PM" : "AM";
+    const displayHour = h % 12 === 0 ? 12 : h % 12;
+    return `${displayHour}:00 ${period}`;
+};
+
+// Auto-generates plausible vehicles for a from/to pair that isn't in the
+// static dataset, guaranteeing every district-to-district search returns
+// real, bookable options instead of "no vehicles found".
+const generateVehicles = (from, to, vehicleType) => {
+    if (!from || !to || from.trim().toLowerCase() === to.trim().toLowerCase()) {
+        return [];
+    }
+
+    const seed = hashCode(`${from.toLowerCase()}-${to.toLowerCase()}-${vehicleType}`);
+    const names = vehicleType === "bus" ? busOperatorNames : trainNames;
+    const count = 3 + (seed % 3); // 3 to 5 options per route
+
+    const vehicles = [];
+    for (let i = 0; i < count; i++) {
+        const opSeed = seed + i * 97;
+        const operator = names[opSeed % names.length];
+        const startHour = (opSeed % 16) + 5; // departs 5 AM - 8 PM
+        const durationHours = 3 + (opSeed % 8); // 3-10 hour journey
+        const arrivalHour = (startHour + durationHours) % 24;
+        const price = vehicleType === "bus"
+            ? 300 + (opSeed % 900)
+            : 250 + (opSeed % 700);
+
+        vehicles.push({
+            id: `gen-${vehicleType}-${from}-${to}-${i}`,
+            operator,
+            type: vehicleType === "bus"
+                ? (opSeed % 2 === 0 ? "AC Business Class" : "Non-AC Chair Coach")
+                : (opSeed % 2 === 0 ? "Shovon Chair" : "AC Chair"),
+            departure: {
+                time: formatTime(startHour),
+                location: from,
+                station: `${from} ${vehicleType === "bus" ? "Bus Terminal" : "Railway Station"}`
+            },
+            arrival: {
+                time: formatTime(arrivalHour),
+                location: to,
+                station: `${to} ${vehicleType === "bus" ? "Bus Terminal" : "Railway Station"}`
+            },
+            duration: `${durationHours}h`,
+            price,
+            seats: generateSeatLayout(vehicleType, 0.3 + (opSeed % 20) / 100)
+        });
+    }
+    return vehicles;
+};
 
 const VehicleBooking = ({ vehicleData }) => {
     const [step, setStep] = useState(1);
@@ -63,9 +189,22 @@ const VehicleBooking = ({ vehicleData }) => {
     const toSuggestionsRef = useRef(null);
 
     useEffect(() => {
-        const savedFavorites = localStorage.getItem('favoriteSearches');
-        if (savedFavorites) {
-            setFavoriteSearches(JSON.parse(savedFavorites));
+        // VULNERABILITY FIX: JSON.parse on raw localStorage content can throw
+        // if the value is malformed or has been tampered with (e.g. via
+        // devtools or a third-party extension), which would crash the whole
+        // component on mount. Wrap it and fall back to a safe default, and
+        // validate the shape before trusting it.
+        try {
+            const savedFavorites = localStorage.getItem('favoriteSearches');
+            if (savedFavorites) {
+                const parsed = JSON.parse(savedFavorites);
+                if (Array.isArray(parsed)) {
+                    setFavoriteSearches(parsed);
+                }
+            }
+        } catch (err) {
+            console.error('Could not read saved favorite searches:', err);
+            localStorage.removeItem('favoriteSearches');
         }
 
         document.addEventListener('mousedown', handleClickOutside);
@@ -75,52 +214,70 @@ const VehicleBooking = ({ vehicleData }) => {
     }, []);
 
     useEffect(() => {
-        localStorage.setItem('favoriteSearches', JSON.stringify(favoriteSearches));
+        try {
+            localStorage.setItem('favoriteSearches', JSON.stringify(favoriteSearches));
+        } catch (err) {
+            console.error('Could not save favorite searches:', err);
+        }
     }, [favoriteSearches]);
 
+    // Runs the search against static data, and falls back to a generated
+    // route (see generateVehicles) whenever the static dataset has no
+    // matching entry, so every district pair is always connected.
     useEffect(() => {
         if (searchTriggered) {
             const seenVehicles = new Set();
-            const filtered = searchParams.vehicleType === "bus"
-                ? vehicleData.buses.filter(v => {
-                    const isMatch = v.departure.location.toLowerCase().includes(searchParams.from.toLowerCase()) &&
-                        v.arrival.location.toLowerCase().includes(searchParams.to.toLowerCase());
+            const sourceData = searchParams.vehicleType === "bus"
+                ? vehicleData.buses
+                : vehicleData.trains;
 
-                    const vehicleKey = `${v.operator}-${v.departure.time}-${v.arrival.time}`;
+            let filtered = sourceData.filter(v => {
+                const isMatch = v.departure.location.toLowerCase().includes(searchParams.from.toLowerCase()) &&
+                    v.arrival.location.toLowerCase().includes(searchParams.to.toLowerCase());
 
-                    if (isMatch && !seenVehicles.has(vehicleKey)) {
-                        seenVehicles.add(vehicleKey);
-                        return true;
-                    }
-                    return false;
-                })
-                : vehicleData.trains.filter(v => {
-                    const isMatch = v.departure.location.toLowerCase().includes(searchParams.from.toLowerCase()) &&
-                        v.arrival.location.toLowerCase().includes(searchParams.to.toLowerCase());
+                const vehicleKey = `${v.operator}-${v.departure.time}-${v.arrival.time}`;
 
-                    const vehicleKey = `${v.operator}-${v.departure.time}-${v.arrival.time}`;
+                if (isMatch && !seenVehicles.has(vehicleKey)) {
+                    seenVehicles.add(vehicleKey);
+                    return true;
+                }
+                return false;
+            }).map(v => normalizeVehicleSeats(v, searchParams.vehicleType));
 
-                    if (isMatch && !seenVehicles.has(vehicleKey)) {
-                        seenVehicles.add(vehicleKey);
-                        return true;
-                    }
-                    return false;
-                });
+            // No static route for this pair? Auto-generate one so the
+            // search never comes back empty for a valid district pair.
+            if (filtered.length === 0) {
+                filtered = generateVehicles(searchParams.from, searchParams.to, searchParams.vehicleType);
+            }
 
             setFilteredVehicles(filtered);
             setSearchTriggered(false);
         }
     }, [searchTriggered, searchParams, vehicleData]);
 
+    // Always advances to the results step once a search completes, whether
+    // or not any vehicles were found, so the "no vehicles found" message
+    // actually renders instead of getting stuck on step 1.
     useEffect(() => {
-        if (filteredVehicles.length === 0 && searchTriggered === false && searchParams.from && searchParams.to) {
-            setNoResults(true);
-        } else if (filteredVehicles.length > 0) {
-            setNoResults(false);
+        if (searchTriggered === false && searchParams.from && searchParams.to) {
             setStep(2);
-            setSelectedVehicle(null);
-            setSelectedSeats([]);
+            if (filteredVehicles.length === 0) {
+                setNoResults(true);
+                // Pop up an explicit alert in addition to the inline message,
+                // so the "no vehicle available" state is impossible to miss.
+                Swal.fire({
+                    icon: 'info',
+                    title: 'No vehicle available',
+                    text: `We couldn't find any ${searchParams.vehicleType === 'bus' ? 'buses' : 'trains'} from ${searchParams.from} to ${searchParams.to} on the selected date.`,
+                    confirmButtonColor: '#FF2056'
+                });
+            } else {
+                setNoResults(false);
+                setSelectedVehicle(null);
+                setSelectedSeats([]);
+            }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filteredVehicles, searchTriggered]);
 
     const handleClickOutside = (event) => {
@@ -137,11 +294,30 @@ const VehicleBooking = ({ vehicleData }) => {
     const handleSearch = (e) => {
         e.preventDefault();
         if (!searchParams.date || new Date(searchParams.date) < new Date()) {
-            alert('Please select a valid future date');
+            Swal.fire({
+                icon: 'warning',
+                title: 'No option available for today',
+                text: 'Please select a valid future date.',
+                confirmButtonColor: '#FF2056'
+            });
             return;
         }
         if (!searchParams.from || !searchParams.to) {
-            alert('Please fill in all required fields');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing information',
+                text: 'Please fill in all required fields.',
+                confirmButtonColor: '#FF2056'
+            });
+            return;
+        }
+        if (searchParams.from.trim().toLowerCase() === searchParams.to.trim().toLowerCase()) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Invalid route',
+                text: 'Origin and destination cannot be the same. Please choose different districts.',
+                confirmButtonColor: '#FF2056'
+            });
             return;
         }
         setSearchTriggered(true);
@@ -197,8 +373,11 @@ const VehicleBooking = ({ vehicleData }) => {
 
     const addToFavorites = () => {
         const newFavorite = {
-            from: searchParams.from,
-            to: searchParams.to,
+            // VULNERABILITY FIX: trim free-text input before persisting it,
+            // so stray whitespace can't create duplicate-looking favorites
+            // or slip untrimmed values into localStorage/UI.
+            from: searchParams.from.trim(),
+            to: searchParams.to.trim(),
             vehicleType: searchParams.vehicleType,
             date: new Date().toLocaleDateString()
         };
@@ -230,8 +409,80 @@ const VehicleBooking = ({ vehicleData }) => {
             setPaymentModalOpen(true);
             addToFavorites();
         } else {
-            alert('Please select a vehicle and seats to proceed.');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Selection required',
+                text: 'Please select a vehicle and seats to proceed.',
+                confirmButtonColor: '#FF2056'
+            });
         }
+    };
+
+    // Renders a seat as a button, color-coded by availability/selection.
+    const renderSeatButton = (seat) => {
+        const isSelected = selectedSeats.includes(seat.id);
+        const isBooked = seat.status === 'booked';
+        return (
+            <button
+                key={seat.id}
+                type="button"
+                disabled={isBooked}
+                onClick={() => handleSeatSelection(seat.id)}
+                title={isBooked ? 'Already booked' : seat.id}
+                className={`w-9 h-9 rounded-md text-[11px] font-semibold flex items-center justify-center transition-colors
+                    ${isBooked
+                        ? 'bg-gray-300 text-gray-400 cursor-not-allowed'
+                        : isSelected
+                            ? 'bg-[#FF2056] text-white'
+                            : 'bg-white border border-gray-300 hover:border-[#FF2056] text-gray-700'
+                    }`}
+            >
+                {seat.id}
+            </button>
+        );
+    };
+
+    // Full seat map: groups seats by row and splits them into a left block
+    // and right block with an aisle gap, mimicking real bus/train seating.
+    const renderSeatMap = () => {
+        if (!selectedVehicle) return null;
+        const leftCount = searchParams.vehicleType === 'bus' ? 2 : 3;
+        const rowNumbers = [...new Set(selectedVehicle.seats.map(s => s.row))];
+
+        return (
+            <div className="max-w-md mx-auto bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <div className="flex justify-end mb-4 pr-1">
+                    <div className="flex items-center text-xs text-gray-500 border border-gray-300 rounded-full px-3 py-1">
+                        <FontAwesomeIcon
+                            icon={searchParams.vehicleType === 'bus' ? faBus : faTrain}
+                            className="mr-2"
+                        />
+                        {searchParams.vehicleType === 'bus' ? 'Driver / Front' : 'Engine / Front'}
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    {rowNumbers.map(row => {
+                        const rowSeats = selectedVehicle.seats.filter(s => s.row === row);
+                        const leftSeats = rowSeats.filter(s => s.col < leftCount);
+                        const rightSeats = rowSeats.filter(s => s.col >= leftCount);
+
+                        return (
+                            <div key={row} className="flex items-center justify-center space-x-3">
+                                <span className="w-4 text-xs text-gray-400">{row}</span>
+                                <div className="flex space-x-2">
+                                    {leftSeats.map(renderSeatButton)}
+                                </div>
+                                <div className="w-6"></div>
+                                <div className="flex space-x-2">
+                                    {rightSeats.map(renderSeatButton)}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -458,7 +709,10 @@ const VehicleBooking = ({ vehicleData }) => {
                                     <FontAwesomeIcon icon={faHeart} className="text-[#4285F4] text-4xl mb-4" />
                                     <h3 className="text-xl font-bold text-[#4285F4] mb-2">No {searchParams.vehicleType === 'bus' ? 'buses' : 'trains'} found</h3>
                                     <p className="text-gray-600 mb-4">
-                                        We couldn't find any {searchParams.vehicleType === 'bus' ? 'buses' : 'trains'} matching your search criteria.
+                                        We couldn't find any {searchParams.vehicleType === 'bus' ? 'buses' : 'trains'} from{' '}
+                                        <span className="font-medium">{searchParams.from}</span> to{' '}
+                                        <span className="font-medium">{searchParams.to}</span>. Double-check the district
+                                        spelling, or try the other vehicle type.
                                     </p>
                                     <div className="flex justify-center space-x-4">
                                         <button
@@ -536,25 +790,26 @@ const VehicleBooking = ({ vehicleData }) => {
 
                                 {selectedVehicle && (
                                     <div className="mt-8">
-                                        <h3 className="text-xl font-semibold mb-4">Select Seats ({selectedSeats.length}/{searchParams.passengers} selected)</h3>
-                                        <div className="grid grid-cols-4 md:grid-cols-8 gap-3 mb-6">
-                                            {selectedVehicle.seats.map(seat => (
-                                                <button
-                                                    key={seat.id}
-                                                    type="button"
-                                                    className={`p-3 rounded-lg text-center font-medium ${seat.status === 'booked'
-                                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                                        : selectedSeats.includes(seat.id)
-                                                            ? 'bg-[#FF2056] text-white'
-                                                            : 'bg-gray-100 hover:bg-gray-200'
-                                                        }`}
-                                                    onClick={() => seat.status !== 'booked' && handleSeatSelection(seat.id)}
-                                                    disabled={seat.status === 'booked'}
-                                                >
-                                                    {seat.id}
-                                                </button>
-                                            ))}
+                                        <h3 className="text-xl font-semibold mb-4">
+                                            Select Seats ({selectedSeats.length}/{searchParams.passengers} selected)
+                                        </h3>
+
+                                        <div className="flex items-center justify-center space-x-6 mb-4 text-sm text-gray-600">
+                                            <div className="flex items-center space-x-2">
+                                                <span className="w-5 h-5 rounded bg-white border border-gray-300 inline-block"></span>
+                                                <span>Available</span>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <span className="w-5 h-5 rounded bg-[#FF2056] inline-block"></span>
+                                                <span>Selected</span>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <span className="w-5 h-5 rounded bg-gray-300 inline-block"></span>
+                                                <span>Booked</span>
+                                            </div>
                                         </div>
+
+                                        {renderSeatMap()}
                                     </div>
                                 )}
 

@@ -8,9 +8,9 @@ const Footer = () => {
                 <div className="w-full h-full md:w-1/2  flex justify-center items-center" style={{ backgroundColor: '#1F2937' }}>
                     <div className="text-center h-max">
                         <h2 className="text-2xl font-bold mb-4">Contact Us</h2>
-                        <p className="mb-2">Email: contact@codecrafters.com</p>
-                        <p className="mb-2">Phone: +1 (123) 456-7890</p>
-                        <p className="mb-2">Address: 123 Code Street, Dev City, 45678</p>
+                        <p className="mb-2">Email: contact@gotrip.com</p>
+                        <p className="mb-2">Phone: 01630147991</p>
+                        <p className="mb-2">Address: Natun Bazar, Dhaka</p>
                     </div>
                 </div>
                 <div className="w-full md:w-1/2 h-full flex  justify-center items-center" style={{ backgroundColor: '#111827' }}>
@@ -36,7 +36,7 @@ const Footer = () => {
             </div>
             <div className="p-2 footer-center text-white text-center" style={{ backgroundColor: '#151515' }}>
                 <div>
-                    <p>Copyright © 2025 - All right reserved by Code_Crafters</p>
+                    <p>Copyright © 2025 - All right reserved by Go_Trip</p>
                 </div>
             </div>
         </footer>

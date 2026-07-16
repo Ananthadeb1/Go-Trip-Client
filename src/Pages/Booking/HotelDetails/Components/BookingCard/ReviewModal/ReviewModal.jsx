@@ -4,11 +4,20 @@ import { faStar, faTimes } from "@fortawesome/free-solid-svg-icons";
 import useAxiosPublic from '../../../../../../hooks/useAxiosPublic';
 import useAuth from '../../../../../../hooks/useAuth';
 
+// Self-contained: Skip and Submit both send the user back to the start of
+// the booking flow by reloading the page. This needs no help from the
+// parent component — a fresh page load naturally resets VehicleBooking
+// back to step 1 with empty state.
 const ReviewModal = ({ setReviewModalOpen }) => {
     const [review, setReview] = useState({ rating: 5, comment: '' });
     const AxiosPublic = useAxiosPublic();
     const { loggedUser } = useAuth();
     console.log("review loggedUser", loggedUser.uid);
+
+    const closeAndReset = () => {
+        setReviewModalOpen(false);
+        window.location.reload();
+    };
 
     return (
         <div className="fixed inset-0 z-[99]  bg-opacity-50 backdrop-blur-xl shadow-lg">
@@ -57,7 +66,7 @@ const ReviewModal = ({ setReviewModalOpen }) => {
 
                     <div className="flex space-x-3">
                         <button
-                            onClick={() => setReviewModalOpen(false)}
+                            onClick={closeAndReset}
                             className="flex-1 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                             Skip
@@ -71,19 +80,19 @@ const ReviewModal = ({ setReviewModalOpen }) => {
                                     comment: review.comment,
                                 });
                                 setReviewModalOpen(false);
-                                import('sweetalert2').then(Swal => {
-                                    Swal.default.fire({
-                                        position: 'top',
-                                        icon: 'success',
-                                        title: 'Thank you for your review!',
-                                        showConfirmButton: false,
-                                        timer: 2000,
-                                        timerProgressBar: true,
-                                        toast: true,
-                                        background: '#fff',
-                                        color: '#333'
-                                    });
+                                const Swal = await import('sweetalert2');
+                                await Swal.default.fire({
+                                    position: 'top',
+                                    icon: 'success',
+                                    title: 'Thank you for your review!',
+                                    showConfirmButton: false,
+                                    timer: 2000,
+                                    timerProgressBar: true,
+                                    toast: true,
+                                    background: '#fff',
+                                    color: '#333'
                                 });
+                                window.location.reload();
                             }}
                             className="flex-1 py-2 bg-[#FF2056] text-white rounded-lg hover:bg-[#E61C4D] transition-colors font-medium"
                         >

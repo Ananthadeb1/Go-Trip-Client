@@ -188,9 +188,6 @@ const PaymentModal = ({
                                     <span className="text-gray-600">Total Amount</span>
                                     <span className="font-bold text-lg text-[#FF2056]">BDT {totalPrice}</span>
                                 </div>
-                                <div className="text-xs text-gray-500 mb-4">
-                                    {nights} night{nights !== 1 ? 's' : ''} • {guests} guest{guests !== 1 ? 's' : ''}
-                                </div>
                             </div>
 
                             <div className="space-y-3">
