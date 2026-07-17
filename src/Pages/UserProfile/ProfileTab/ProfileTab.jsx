@@ -8,13 +8,14 @@ import useAuth from "../../../hooks/useAuth";
 const ProfileTab = ({ user, onEdit }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedUser, setEditedUser] = useState({ ...user });
-//   const axiosSecure = useAxiosSecure();
-//   const queryClient = useQueryClient();
+  const [loading, setLoading] = useState(false);
+  //   const axiosSecure = useAxiosSecure();
+  //   const queryClient = useQueryClient();
   const { loggedUser } = useAuth();
 
   useEffect(() => {
     setEditedUser({ ...user });
-}, [user]);
+  }, [user]);
 
   const handleEditClick = () => {
     setIsEditing(!isEditing);
@@ -35,22 +36,23 @@ const ProfileTab = ({ user, onEdit }) => {
 
   const handleSave = async () => {
     try {
-        const { _id, ...userData } = editedUser;
+      setLoading(true);
 
-        await onEdit(userData);
+      const { _id, ...userData } = editedUser;
 
-        setIsEditing(false);
+      await onEdit(userData);
 
+      setIsEditing(false);
     } catch (error) {
-
-        Swal.fire({
-            icon: "error",
-            title: "Failed to update profile",
-            text: error.message,
-        });
-
+      Swal.fire({
+        icon: "error",
+        title: "Failed to update profile",
+        text: error.message,
+      });
+    } finally {
+      setLoading(false);
     }
-};
+  };
 
   return (
     <div className="space-y-6">
@@ -66,11 +68,40 @@ const ProfileTab = ({ user, onEdit }) => {
               <span>Discard</span>
             </button>
             <button
-              className="text-rose-500 hover:text-rose-600 flex items-center gap-1 border border-rose-500 px-3 py-1 rounded-md"
+              className="text-rose-500 hover:text-rose-600 flex items-center gap-2 border border-rose-500 px-3 py-1 rounded-md disabled:opacity-70 disabled:cursor-not-allowed"
               onClick={handleSave}
+              disabled={loading}
             >
-              <PencilIcon className="w-4 h-4" />
-              <span>Save</span>
+              {loading ? (
+                <>
+                  <svg
+                    className="w-4 h-4 animate-spin"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                  </svg>
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <PencilIcon className="w-4 h-4" />
+                  <span>Save</span>
+                </>
+              )}
             </button>
           </div>
         ) : (
