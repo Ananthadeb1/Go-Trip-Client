@@ -143,7 +143,8 @@ const UserManagement = () => {
                 <p className="text-gray-600 mt-2">Manage all registered users and their permissions</p>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden lg:block overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-100">
                         <tr>
@@ -243,6 +244,77 @@ const UserManagement = () => {
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View (No Horizontal Scroll) */}
+            <div className="block lg:hidden p-4 space-y-4">
+                {users.map((user) => (
+                    <div key={user._id} className="bg-gray-50 rounded-xl p-4 border border-gray-100 flex flex-col gap-3">
+                        <div className="flex items-center gap-3">
+                            <div className="h-12 w-12 rounded-full overflow-hidden border-2 border-indigo-100 flex-shrink-0">
+                                {user.image ? (
+                                    <img
+                                        src={user.image}
+                                        alt={user.name}
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="h-full w-full bg-indigo-100 flex items-center justify-center">
+                                        <span className="text-indigo-600 font-medium text-xl">
+                                            {user.name.charAt(0).toUpperCase()}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="min-w-0">
+                                <div className="text-base font-semibold text-gray-900 truncate">{user.name}</div>
+                                <div className="text-xs text-gray-500">Joined: {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</div>
+                            </div>
+                        </div>
+
+                        <div className="text-sm space-y-1 text-gray-600 border-t border-b border-gray-100 py-2">
+                            <div className="flex justify-between">
+                                <span className="text-gray-400">Email:</span>
+                                <span className="font-medium text-gray-800 break-all pl-2">{user.email}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-400">Phone:</span>
+                                <span className="font-medium text-gray-800">{user.phone || 'No phone'}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-gray-400">Bookings:</span>
+                                <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${bookingCounts[user._id] > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                    {bookingCounts[user._id] || 0} bookings
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                            <div>
+                                {user.role === 'admin' ? (
+                                    <span className="px-2.5 py-1 inline-flex items-center text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                                        <MdAdminPanelSettings className="mr-1" size={14} />
+                                        Admin
+                                    </span>
+                                ) : (
+                                    <button
+                                        onClick={() => handleMakeAdmin(user)}
+                                        className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors flex items-center text-xs font-semibold"
+                                    >
+                                        <FiEdit className="mr-1" size={14} />
+                                        Make Admin
+                                    </button>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => handleDeleteUser(user)}
+                                className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-colors"
+                            >
+                                <FiTrash2 size={18} />
+                            </button>
+                        </div>
+                    </div>
+                ))}
             </div>
 
             <div className="px-8 py-5 border-t border-gray-200 bg-gray-50 flex items-center justify-between">

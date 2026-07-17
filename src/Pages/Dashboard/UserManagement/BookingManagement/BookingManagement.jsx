@@ -50,7 +50,8 @@ const BookingManagement = () => {
                 <p className="text-gray-600 mt-2">Manage all tour bookings and reservations</p>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden lg:block overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-100">
                         <tr>
@@ -125,6 +126,56 @@ const BookingManagement = () => {
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View (No Horizontal Scroll) */}
+            <div className="block lg:hidden p-4 space-y-4">
+                {bookings.map(booking => (
+                    <div key={booking._id} className="bg-gray-50 rounded-xl p-4 border border-gray-100 flex flex-col gap-3">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <div className="font-semibold text-gray-900">{booking.hotelLocation ? booking.hotelLocation : booking.dest}</div>
+                                <div className="text-xs text-gray-500">
+                                    {(() => {
+                                        const dateVal = booking.startDate || booking.journeyDate || booking.bookingTime;
+                                        return dateVal ? new Date(dateVal).toLocaleDateString() : 'N/A';
+                                    })()}
+                                </div>
+                            </div>
+                            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${booking.status?.toLowerCase() === "confirmed" ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                                {booking.status?.toLowerCase() === "confirmed" ? 'Paid' : 'Canceled'}
+                            </span>
+                        </div>
+
+                        <div className="text-sm space-y-1 text-gray-600 border-t border-b border-gray-100 py-2">
+                            <div className="flex justify-between">
+                                <span className="text-gray-400">User Name:</span>
+                                <span className="font-medium text-gray-800">{booking.userName}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-400">User Email:</span>
+                                <span className="font-medium text-gray-800 break-all pl-2">{booking.userEmail}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-400">Guests:</span>
+                                <span className="font-medium text-gray-800">{booking.guests ? booking.guests : booking.passengers} guests</span>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <span className="text-xs text-gray-400 block">Total Cost:</span>
+                                <span className="font-bold text-indigo-600">৳{booking.totalCost || 0}</span>
+                            </div>
+                            <button
+                                onClick={() => handleDeleteBooking(booking)}
+                                className="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50"
+                            >
+                                <FiTrash2 size={18} />
+                            </button>
+                        </div>
+                    </div>
+                ))}
             </div>
 
             <div className="px-8 py-5 border-t border-gray-200 bg-gray-50 flex justify-between items-center">

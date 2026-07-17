@@ -36,19 +36,28 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="flex flex-col md:flex-row min-h-screen ">
+        <div className="flex flex-col md:flex-row min-h-screen">
             {/* Mobile Sidebar Toggle */}
             <button
-                className="md:hidden fixed top-4 left-4 z-30 p-3 rounded-lg bg-[#FF2056] text-white shadow-lg"
+                className="md:hidden fixed top-4 left-4 z-30 p-3 rounded-lg bg-[#FF2056] text-white shadow-lg focus:outline-none"
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             >
                 <FontAwesomeIcon icon={isSidebarOpen ? faTimes : faBars} size="lg" />
             </button>
 
+            {/* Backdrop overlay for mobile */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 z-10 bg-black/45 backdrop-blur-sm md:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
             <div
-                className={`fixed md:relative z-20 bg-white p-6 w-72 h-full border-r border-[#FFEAEE] transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                    } md:translate-x-0 transition-transform duration-300 ease-in-out shadow-xl md:shadow-none flex flex-col`}
+                className={`fixed md:sticky top-0 left-0 z-20 bg-white p-6 w-72 h-screen border-r border-[#FFEAEE] transform ${
+                    isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                } md:translate-x-0 transition-transform duration-300 ease-in-out shadow-xl md:shadow-none flex flex-col`}
             >
                 <div className="flex-1 overflow-y-auto">
                     <h2 className="text-2xl font-bold text-[#FF2056] mb-8 pl-2 flex items-center">
@@ -99,10 +108,10 @@ const Dashboard = () => {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-w-0">
                 {/* Top Navigation */}
-                <div className="p-6 md:p-8">
-                    <div className="flex justify-between items-center mb-6">
+                <div className="pt-6 pb-4 px-6 md:p-8 pl-20 md:pl-8 border-b border-gray-100 bg-white md:bg-transparent">
+                    <div className="flex justify-between items-center">
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center">
                             <FontAwesomeIcon
                                 icon={menuItems.find(item => item.name === selected)?.icon || faUsers}
@@ -110,13 +119,12 @@ const Dashboard = () => {
                             />
                             {selected}
                         </h1>
-
                     </div>
                 </div>
 
                 {/* Content Area */}
-                <div className="px-6 md:px-8 pb-8 flex-1">
-                    <div className="bg-white rounded-2xl shadow-sm border border-[#FFEAEE] p-6 h-full">
+                <div className="p-4 md:p-8 flex-1 min-w-0">
+                    <div className="bg-white rounded-2xl shadow-sm border border-[#FFEAEE] p-4 md:p-6 h-full overflow-hidden">
                         {renderComponent()}
                     </div>
                 </div>
