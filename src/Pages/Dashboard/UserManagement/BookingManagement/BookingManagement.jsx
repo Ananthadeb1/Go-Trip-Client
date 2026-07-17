@@ -89,7 +89,10 @@ const BookingManagement = () => {
                                 <td className="px-8 py-5">
                                     <div className="font-medium text-gray-900">{booking.hotelLocation ? booking.hotelLocation : booking.dest}</div>
                                     <div className="text-sm text-gray-500">
-                                        {new Date(booking.startDate ? booking.startDate : booking.journeyDate).toLocaleDateString()}
+                                        {(() => {
+                                            const dateVal = booking.startDate || booking.journeyDate || booking.bookingTime;
+                                            return dateVal ? new Date(dateVal).toLocaleDateString() : 'N/A';
+                                        })()}
                                     </div>
                                 </td>
                                 <td className="px-8 py-5">
@@ -103,9 +106,9 @@ const BookingManagement = () => {
                                     </div>
                                 </td>
                                 <td className="px-8 py-5">
-                                    <div className="font-semibold text-indigo-600">${booking.totalCost}</div>
-                                    <div className={`text-xs font-medium ${booking.status === "Confirmed" ? 'text-green-600' : 'text-amber-600'}`}>
-                                        {booking.status === "confirmed" ? 'Paid' : 'cancled'}
+                                    <div className="font-semibold text-indigo-600">৳{booking.totalCost || 0}</div>
+                                    <div className={`text-xs font-medium ${booking.status?.toLowerCase() === "confirmed" ? 'text-green-600' : 'text-amber-600'}`}>
+                                        {booking.status?.toLowerCase() === "confirmed" ? 'Paid' : 'Canceled'}
                                     </div>
                                 </td>
                                 <td className="px-8 py-5 text-right">

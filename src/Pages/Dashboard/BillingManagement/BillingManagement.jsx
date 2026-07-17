@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { FiDollarSign, FiCreditCard, FiPieChart, FiUsers, FiXCircle } from "react-icons/fi";
+import { FiDollarSign, FiCreditCard, FiPieChart, FiUsers, FiXCircle, FiTrendingUp } from "react-icons/fi";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import useAxiosPublic from "../../../hooks/useAxiosPublic";
 
@@ -27,12 +27,19 @@ const BillingManagement = () => {
     );
 
     // Calculate financial metrics
+    const totalOrderAmount = bookings.reduce((sum, b) => sum + (b.totalCost || 0), 0);
+    const paidAmount = bookings.filter(b => b.status?.toLowerCase() === 'confirmed').reduce((sum, b) => sum + (b.totalCost || 0), 0);
+    const canceledAmount = bookings.filter(b => b.status?.toLowerCase() === 'cancelled').reduce((sum, b) => sum + (b.totalCost || 0), 0);
+    const profit = paidAmount * 0.10;
+    const payingUsers = new Set(bookings.filter(b => b.status?.toLowerCase() === 'confirmed').map(b => b.userId)).size;
+
     const billingData = {
         paymentMethods: paymentMethodCounts,
-        totalRevenue: bookings.reduce((sum, b) => sum + (b.totalCost || 0), 0),
-        paidAmount: bookings.filter(b => b.status?.toLowerCase() === 'confirmed').reduce((sum, b) => sum + (b.totalCost || 0), 0),
-        canceledAmount: bookings.filter(b => b.status?.toLowerCase() === 'cancelled').reduce((sum, b) => sum + (b.totalCost || 0), 0),
-        payingUsers: new Set(bookings.filter(b => b.status?.toLowerCase() === 'confirmed').map(b => b.userId)).size,
+        totalOrderAmount,
+        paidAmount,
+        canceledAmount,
+        profit,
+        payingUsers,
         recentTransactions: bookings
             .sort((a, b) => new Date(b.bookingTime) - new Date(a.bookingTime))
             .slice(0, 5)
@@ -69,13 +76,13 @@ const BillingManagement = () => {
                 <p className="text-gray-600 mt-2">Track payments, refunds, and financial metrics</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 border-b border-gray-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 p-6 border-b border-gray-200">
                 <div className="bg-indigo-50 rounded-lg p-5">
                     <div className="flex items-center">
                         <FiDollarSign className="text-indigo-600" size={24} />
-                        <span className="ml-3 text-gray-600">Total Revenue</span>
+                        <span className="ml-3 text-gray-600">Total Order Amount</span>
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-800 mt-2">৳{billingData.totalRevenue?.toLocaleString() || '0'}</h3>
+                    <h3 className="text-2xl font-bold text-gray-800 mt-2">৳{billingData.totalOrderAmount?.toLocaleString() || '0'}</h3>
                 </div>
 
                 <div className="bg-green-50 rounded-lg p-5">
@@ -89,9 +96,17 @@ const BillingManagement = () => {
                 <div className="bg-amber-50 rounded-lg p-5">
                     <div className="flex items-center">
                         <FiXCircle className="text-amber-600" size={24} />
-                        <span className="ml-3 text-gray-600">Canceled Amount</span>
+                        <span className="ml-3 text-gray-600">Cancel Amount</span>
                     </div>
                     <h3 className="text-2xl font-bold text-gray-800 mt-2">৳{billingData.canceledAmount?.toLocaleString() || '0'}</h3>
+                </div>
+
+                <div className="bg-teal-50 rounded-lg p-5">
+                    <div className="flex items-center">
+                        <FiTrendingUp className="text-teal-600" size={24} />
+                        <span className="ml-3 text-gray-600">Profit</span>
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-800 mt-2">৳{billingData.profit?.toLocaleString() || '0'}</h3>
                 </div>
 
                 <div className="bg-purple-50 rounded-lg p-5">

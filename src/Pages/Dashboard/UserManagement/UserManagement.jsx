@@ -113,7 +113,7 @@ const UserManagement = () => {
                                 background: '#f9fafb'
                             });
                             axiosSecure.delete(`/bookings/${user._id}`).catch(() => { });
-                            axiosSecure.delete(`/itinerarys/${user._id}`).catch(() => { });
+                            axiosSecure.delete(`/itineraries/${user._id}`).catch(() => { });
                         }
                     })
                     .catch(error => {
@@ -198,7 +198,7 @@ const UserManagement = () => {
                                         </div>
                                         <div className="ml-4">
                                             <div className="text-lg font-medium text-gray-900">{user.name}</div>
-                                            <div className="text-sm text-gray-500">Joined: {new Date(user.createdAt).toLocaleDateString()}</div>
+                                            <div className="text-sm text-gray-500">Joined: {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</div>
                                         </div>
                                     </div>
                                 </td>
