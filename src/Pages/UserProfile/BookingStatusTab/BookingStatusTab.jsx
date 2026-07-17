@@ -22,13 +22,6 @@ const BookingStatusTab = () => {
         return () => clearInterval(interval);
     }, []);
 
-    // Refetch data when the component mounts or when the user changes
-    useEffect(() => {
-        if (loggedUser?._id) {
-            // Invalidate the query to ensure fresh data
-            queryClient.invalidateQueries(['bookings', loggedUser._id]);
-        }
-    }, [loggedUser?._id, queryClient]);
 
     const { data: bookings = [], isLoading, isError, refetch } = useQuery({
         queryKey: ['bookings', loggedUser?._id],

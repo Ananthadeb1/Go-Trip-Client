@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 
 const NavBar = () => {
     const [isAdmin] = useAdmin();
-    const { loggedUser, logout } = useAuth();
+    const { user, loggedUser, logout } = useAuth();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [prevScrollPos, setPrevScrollPos] = useState(0);
     const [visible, setVisible] = useState(true);
@@ -30,10 +30,10 @@ const NavBar = () => {
     const navLinks = [
         { path: "/", label: "Home" },
         { path: "/booking", label: "Booking" },
-        ...(loggedUser ? [{ path: "/Booking_Status", label: "Booking Status" }] : []),
-        ...(loggedUser ? [{ path: "/History", label: "History" }] : []),
-        ...(loggedUser ? [{ path: "/Expense_Tracking", label: "Expense Tracking" }] : []),
-        ...(loggedUser ? [{ path: "/Itinerary", label: "Itinerary" }] : []),
+        ...(user ? [{ path: "/Booking_Status", label: "Booking Status" }] : []),
+        ...(user ? [{ path: "/History", label: "History" }] : []),
+        ...(user ? [{ path: "/Expense_Tracking", label: "Expense Tracking" }] : []),
+        ...(user ? [{ path: "/Itinerary", label: "Itinerary" }] : []),
         ...(isAdmin ? [{ path: "/Dashboard", label: "Dashboard" }] : []),
     ];
 
@@ -64,17 +64,17 @@ const NavBar = () => {
                             ))}
                         </div>
 
-                        {/* loggedUser/Auth Section */}
-                        {loggedUser ? (
+                        {/* user/Auth Section */}
+                        {user ? (
                             <div className="ml-6 flex items-center">
                                 <div className="dropdown dropdown-end">
                                     <label tabIndex={0} className="cursor-pointer group">
                                         <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-[#FF2056] transition-colors duration-300">
-                                            {loggedUser.image ? (
-                                                <img src={loggedUser.image} alt="Profile" className="w-full h-full object-cover" />
+                                            {loggedUser?.image || user.photoURL ? (
+                                                <img src={loggedUser?.image || user.photoURL} alt="Profile" className="w-full h-full object-cover" />
                                             ) : (
                                                 <span className="text-gray-600 text-lg font-medium">
-                                                    {loggedUser.name?.charAt(0).toUpperCase() || 'U'}
+                                                    {loggedUser?.name?.charAt(0).toUpperCase() || user.displayName?.charAt(0).toUpperCase() || 'U'}
                                                 </span>
                                             )}
                                         </div>
@@ -162,7 +162,7 @@ const NavBar = () => {
                             {link.label}
                         </NavLink>
                     ))}
-                    {loggedUser ? (
+                    {user ? (
                         <>
                             <NavLink
                                 to="/userProfile"

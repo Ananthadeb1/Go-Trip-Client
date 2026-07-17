@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import useAxiosPublic from '../../../hooks/useAxiosPublic';
 
 const SocialLogin = () => {
-    const { loginWithGoogle, updateUserProfile } = useContext(AuthContext);
+    const { loginWithGoogle, updateUserProfile, fetchUserData } = useContext(AuthContext);
     const navigate = useNavigate();
     const location = useLocation();
     const from = location.state?.from?.pathname || "/";
@@ -15,28 +15,20 @@ const SocialLogin = () => {
         loginWithGoogle()
             .then(result => {
                 const loggedUser = result.user;
-                return updateUserProfile(loggedUser.displayName, loggedUser.photoURL)
-                    .then(() => {
-                        // Manually update the user in context
-                        const userInfo = {
-                            uid: loggedUser.uid,
-                            name: loggedUser.displayName,
-                            email: loggedUser.email,
-                            image: loggedUser.photoURL
-                        };
-                        return axiosPublic.post("/users", userInfo);
-                    })
-                    .then(async () => {  // ADD 'async' HERE
-                        // ADD THIS - Get JWT token
-                        const response = await axiosPublic.post('/jwt', {
-                            email: loggedUser.email,
-                            name: loggedUser.displayName
-                        });
-                        const token = response.data.token;
-                        localStorage.setItem('accessToken', token);
-                        console.log('JWT Token stored:', token);
-
-                        navigate(from, { replace: true });
+                const userInfo = {
+                    uid: loggedUser.uid,
+                    name: loggedUser.displayName,
+                    email: loggedUser.email,
+                    image: loggedUser.photoURL
+                };
+                return axiosPublic.post("/users", userInfo)
+                    .then(async () => {
+                        // Fetch token and database user details through AuthProvider
+                        await fetchUserData(loggedUser.email);
+                        
+                        const fromPath = location.state?.from?.pathname || location.state?.from || "/";
+                        const targetPath = (location.pathname === "/signup" || fromPath === "/login" || fromPath === "/signup") ? "/" : fromPath;
+                        navigate(targetPath, { replace: true });
                     });
             })
             .catch(error => {

@@ -59,23 +59,12 @@ const Signup = () => {
             await axiosPublic.post("/users", userInfo);
             console.log("User saved to database");
 
-            // 4. Get JWT token
-            const response = await axiosPublic.post('/jwt', {
-                email: result.user.email,
-                name: result.user.displayName || name
-            });
-            const token = response.data.token;
-
-            // 5. Store token
-            localStorage.setItem('accessToken', token);
-            console.log("JWT Token stored");
-
-            // 6. Fetch user data (this sets loggedUser)
+            // 4. Fetch token and database user details through AuthProvider
             await fetchUserData(result.user.email);
             console.log("User data fetched");
 
-            // 7. Navigate to the page user came from
-            navigate(from, { replace: true });
+            // Redirect to the home page automatically
+            navigate("/", { replace: true });
 
         } catch (error) {
             console.error("Signup error:", error);

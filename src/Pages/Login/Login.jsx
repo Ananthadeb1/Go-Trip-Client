@@ -4,17 +4,17 @@ import useAuth from '../../hooks/useAuth';
 import { useState } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
-import useAxiosPublic from '../../hooks/useAxiosPublic';  // ADD THIS AT TOP
+
 
 const Login = () => {
-    const axiosPublic = useAxiosPublic(); // ADD THIS inside component
-    const { login, setUser } = useAuth();
+    const { login, setUser, fetchUserData } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [errors, setErrors] = useState({ email: '', password: '', general: '' });
     const [showPassword, setShowPassword] = useState(false);
 
-    const from = location.state?.from?.pathname || "/";
+    const fromPath = location.state?.from?.pathname || location.state?.from || "/";
+    const from = (fromPath === "/login" || fromPath === "/signup") ? "/" : fromPath;
 
     const handleLogin = event => {
         event.preventDefault();
@@ -48,13 +48,8 @@ const Login = () => {
                 console.log(user);
                 setUser(user);
 
-                // ADD THIS - Get JWT token
-                const response = await axiosPublic.post('/jwt', {
-                    email: user.email,
-                    name: user.displayName || user.name
-                });
-                const token = response.data.token;
-                localStorage.setItem('accessToken', token);
+                // Fetch token and database user details through AuthProvider
+                await fetchUserData(user.email);
 
                 navigate(from, { replace: true });
             })

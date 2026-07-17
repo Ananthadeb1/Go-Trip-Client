@@ -7,8 +7,61 @@ import useAxiosSecure from "../../hooks/useAxiosSecure";
 import Swal from "sweetalert2";
 import axios from "axios";
 
+const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.7) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        // Calculate new dimensions
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name, {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              reject(new Error("Canvas compression failed"));
+            }
+          },
+          "image/jpeg",
+          quality
+        );
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
+
 const UserProfile = () => {
-  const { loggedUser, fetchUserData } = useAuth();
+  const { loggedUser, dbUserLoading, setLoggedUser } = useAuth();
   const [activeTab, setActiveTab] = useState("Profile");
   const [imageUploading, setImageUploading] = useState(false);
 
@@ -25,8 +78,11 @@ const UserProfile = () => {
     try {
       setImageUploading(true);
 
+      // Compress the image before uploading to speed up the network request
+      const compressedFile = await compressImage(file);
+
       const formData = new FormData();
-      formData.append("image", file);
+      formData.append("image", compressedFile);
 
       const upload = await axios.post(
         `https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_ImagebbApiKey}`,
@@ -39,7 +95,7 @@ const UserProfile = () => {
         image: imageUrl,
       });
 
-      await fetchUserData(loggedUser.email);
+      setLoggedUser(prev => ({ ...prev, image: imageUrl }));
 
       Swal.fire({
         icon: "success",
@@ -66,18 +122,29 @@ const UserProfile = () => {
       updateData,
     );
 
-    if (response.data.modifiedCount > 0) {
-      await fetchUserData(loggedUser.email);
+    if (response.data.modifiedCount > 0 || response.data.matchedCount > 0) {
+      setLoggedUser(prev => ({ ...prev, ...updateData }));
       return true;
     }
 
     throw new Error("Profile update failed");
   };
 
- const triggerFileInput = () => {
+  const triggerFileInput = () => {
     if (imageUploading) return;
     fileInputRef.current?.click();
-};
+  };
+
+  if (!loggedUser) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="h-16 w-16 bg-[#FF2056] rounded-full mb-4 animate-bounce"></div>
+          <p className="text-[#FF2056] font-medium">Loading profile details...</p>
+        </div>
+      </div>
+    );
+  }
 
   const renderTabContent = () => {
     switch (activeTab) {
