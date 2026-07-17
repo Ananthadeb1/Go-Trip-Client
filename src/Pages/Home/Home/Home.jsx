@@ -1,5 +1,5 @@
 // Home.jsx
-import { AnimatePresence } from 'framer-motion';
+import {motion, AnimatePresence } from 'framer-motion';
 import { StarIcon } from '@heroicons/react/24/solid';
 import VideoSection from './VideoSection/VideoSection';
 import Banner from './Banner/Banner';

@@ -1,5 +1,5 @@
-import { PencilIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/solid";
-import { useEffect, useState } from "react";
+import { PencilIcon, PlusIcon, XMarkIcon, CalendarIcon } from "@heroicons/react/24/solid";
+import { useEffect, useState, useRef } from "react";
 // import useAxiosSecure from "../../../hooks/useAxiosSecure";
 // import { useQueryClient } from "@tanstack/react-query";
 import Swal from "sweetalert2";
@@ -12,6 +12,7 @@ const ProfileTab = ({ user, onEdit }) => {
   //   const axiosSecure = useAxiosSecure();
   //   const queryClient = useQueryClient();
   const { loggedUser } = useAuth();
+  const dateInputRef = useRef(null);
 
   useEffect(() => {
     setEditedUser({ ...user });
@@ -52,6 +53,16 @@ const ProfileTab = ({ user, onEdit }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Standard helper to strictly display dates as dd/mm/yyyy
+  const formatDateToDDMMYYYY = (dateString) => {
+    if (!dateString) return "Not provided";
+    const parts = dateString.split("-");
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateString;
   };
 
   return (
@@ -168,15 +179,38 @@ const ProfileTab = ({ user, onEdit }) => {
           <div>
             <h3 className="text-sm font-medium text-gray-500 mb-2">BIRTHDAY</h3>
             {isEditing ? (
-              <input
-                type="date"
-                value={editedUser.birthday || ""}
-                onChange={(e) => handleFieldChange("birthday", e.target.value)}
-                className="text-gray-800 bg-transparent border-b border-gray-300 focus:border-rose-500 focus:outline-none"
-              />
+              <div className="relative flex items-center border-b border-gray-300 focus-within:border-rose-500 max-w-[180px]">
+                {/* Visual text input to strictly control and show dd/mm/yyyy format */}
+                <input
+                  type="text"
+                  placeholder="DD/MM/YYYY"
+                  value={formatDateToDDMMYYYY(editedUser.birthday)}
+                  readOnly
+                  onClick={() => dateInputRef.current?.showPicker()}
+                  className="w-full text-gray-800 bg-transparent focus:outline-none cursor-pointer pr-7"
+                />
+                {/* Hidden native picker field that syncs data securely */}
+                <input
+                  type="date"
+                  ref={dateInputRef}
+                  value={editedUser.birthday || ""}
+                  onChange={(e) => handleFieldChange("birthday", e.target.value)}
+                  className="absolute inset-0 opacity-0 pointer-events-none w-0 h-0"
+                />
+                {/* Explicitly visible calendar icon button */}
+                <button
+                  type="button"
+                  onClick={() => dateInputRef.current?.showPicker()}
+                  className="absolute right-0 text-gray-400 hover:text-rose-500 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                    <path fillRule="evenodd" d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
             ) : (
               <p className="text-gray-800">
-                {editedUser.birthday || "Not provided"}
+                {formatDateToDDMMYYYY(editedUser.birthday)}
               </p>
             )}
           </div>
