@@ -61,7 +61,7 @@ const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.7) => 
 };
 
 const UserProfile = () => {
-  const { loggedUser, dbUserLoading, setLoggedUser } = useAuth();
+  const { loggedUser, setLoggedUser } = useAuth();
   const [activeTab, setActiveTab] = useState("Profile");
   const [imageUploading, setImageUploading] = useState(false);
 

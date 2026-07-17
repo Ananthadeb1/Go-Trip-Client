@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaSave, FaStop, FaUndo } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaSave, FaStop, FaTrash, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import useAxiosPublic from '../../../hooks/useAxiosPublic';
 import useAuth from '../../../hooks/useAuth';
 import Swal from 'sweetalert2';
 
 const ItineraryGenerator = () => {
-    // State for form inputs
+    // State for form inputs (Separated from display list)
     const [location, setLocation] = useState('');
     const [days, setDays] = useState(2);
     const axiosPublic = useAxiosPublic();
@@ -17,12 +17,11 @@ const ItineraryGenerator = () => {
     const [error, setError] = useState(null);
     const [abortController, setAbortController] = useState(null);
 
-    // State for itinerary data
-    const [itineraryData, setItineraryData] = useState(null);
-    const [existingItinerary, setExistingItinerary] = useState(null);
-    const [previousItinerary, setPreviousItinerary] = useState(null);
+    // Main itinerary state array (Max 2 saved) and transient storage (1 unsaved)
+    const [savedItineraries, setSavedItineraries] = useState([]);
+    const [newlyGenerated, setNewlyGenerated] = useState(null);
+    const [expandedKey, setExpandedKey] = useState(null);
 
-    // Color theme
     const colors = {
         primary: '#EC003F',
         secondary: '#FF6B8B',
@@ -31,31 +30,70 @@ const ItineraryGenerator = () => {
         text: '#333333'
     };
 
-    // Ref for top of results section
     const resultsRef = useRef(null);
 
-    // Load existing itinerary on component mount
+    // Optimized Performance: Check Local Storage first, fetch from API ONLY if cache is empty
     useEffect(() => {
-        const fetchExistingItinerary = async () => {
+        let isMounted = true;
+        
+        const fetchSavedItineraries = async () => {
+            if (!loggedUser?._id) return;
+
+            // Step 1: Check performance cache first
+            const cachedData = localStorage.getItem(`itineraries_${loggedUser._id}`);
+            if (cachedData) {
+                const parsedCache = JSON.parse(cachedData);
+                if (isMounted) {
+                    setSavedItineraries(parsedCache);
+                    if (parsedCache.length > 0) setExpandedKey(0);
+                    return; // Prevent making database call completely if cached!
+                }
+            }
+
+            // Step 2: Fallback to database only if no local cache exists
             try {
                 const response = await axiosPublic.get(`/itineraries/${loggedUser._id}`);
-                if (response.data) {
-                    setExistingItinerary(response.data);
-                    setLocation(response.data.location);
-                    setDays(response.data.days);
-                    setItineraryData(response.data.itinerary);
+                if (response.data && isMounted) {
+                    // Normalize the database format into a clean array structure
+                    let data = [];
+                    if (Array.isArray(response.data)) {
+                        data = response.data;
+                    } else if (response.data.itineraries) {
+                        data = response.data.itineraries;
+                    } else if (response.data.location) {
+                        data = [response.data];
+                    }
+                    
+                    const cleanSaved = data.slice(0, 2);
+                    setSavedItineraries(cleanSaved);
+                    localStorage.setItem(`itineraries_${loggedUser._id}`, JSON.stringify(cleanSaved));
+                    
+                    if (cleanSaved.length > 0) {
+                        setExpandedKey(0);
+                    }
                 }
             } catch (error) {
-                console.log('No existing itinerary found,', error);
+                console.log('No existing itineraries found in cloud.', error);
             }
         };
 
-        if (loggedUser?.uid) {
-            fetchExistingItinerary();
-        }
-    }, [loggedUser?.uid, axiosPublic]);
+        fetchSavedItineraries();
 
-    // Stop generation function
+        // Prevents browser background port detachment loops
+        return () => {
+            isMounted = false;
+        };
+    }, [loggedUser?._id, axiosPublic]);
+
+    // Clean up active requests when unmounting to stop "disconnected port" errors
+    useEffect(() => {
+        return () => {
+            if (abortController) {
+                abortController.abort();
+            }
+        };
+    }, [abortController]);
+
     const stopGeneration = () => {
         if (abortController) {
             abortController.abort();
@@ -64,18 +102,6 @@ const ItineraryGenerator = () => {
         }
     };
 
-    // Restore previous itinerary
-    const restorePreviousItinerary = () => {
-        if (previousItinerary) {
-            setItineraryData(previousItinerary.itinerary);
-            setLocation(previousItinerary.location);
-            setDays(previousItinerary.days);
-            setExistingItinerary(previousItinerary);
-            setPreviousItinerary(null);
-        }
-    };
-
-    // Extract JSON from API response
     const extractJsonFromResponse = (response) => {
         try {
             const codeBlockRegex = /```json\n([\s\S]*?)\n```/;
@@ -90,49 +116,12 @@ const ItineraryGenerator = () => {
         }
     };
 
-    // Save itinerary to database
-    const saveItinerary = async () => {
-        try {
-            await axiosPublic.patch(`/itineraries/${loggedUser._id}`, {
-                userId: loggedUser._id,
-                location,
-                days,
-                itinerary: itineraryData,
-                updatedAt: new Date().toISOString()
-            });
-            setExistingItinerary({
-                location,
-                days,
-                itinerary: itineraryData
-            });
-            setPreviousItinerary(null);
-            // Show success SweetAlert2
-            Swal.fire({
-                icon: 'success',
-                title: 'Saved!',
-                text: 'Itinerary saved successfully!',
-                timer: 1500,
-                showConfirmButton: false
-            });
-        } catch (error) {
-            console.error('Save failed:', error);
-            setError('Failed to save itinerary');
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Failed to save itinerary'
-            });
-        }
-    };
-
-    // Generate new itinerary
     const generateItinerary = async (e) => {
         e.preventDefault();
         if (!location.trim() || isLoading) return;
 
         const controller = new AbortController();
         setAbortController(controller);
-        setPreviousItinerary(existingItinerary);
         setIsLoading(true);
         setError(null);
 
@@ -141,38 +130,28 @@ const ItineraryGenerator = () => {
                 'https://openrouter.ai/api/v1/chat/completions',
                 {
                     model: "deepseek/deepseek-chat",
-                    messages: [{
-                        role: "user",
-                        content: `You are an expert local travel guide for Bangladesh with deep knowledge of ${location}.
-
-Create a detailed ${days}-day travel itinerary for ${location}, Bangladesh.
-
-Requirements:
-- Each day should have a logical geographic flow (minimize backtracking between locations)
-- Include a mix of must-see attractions, local food experiences, and authentic cultural activities
-- Activities should be realistic given typical opening hours, travel time, and local context
-- Use specific, real place names (actual landmarks, restaurants, neighborhoods) rather than generic descriptions
-- Vary the pace across days — don't overload any single day
-- Consider local weather, prayer times, and cultural norms when relevant to timing
-- Description should be 1-2 sentences giving a visitor practical, useful context (not just marketing language)
-- Duration should be realistic (e.g. "1.5 hours", "45 minutes", "2-3 hours")
-- Location should include enough detail to actually find the place (area/neighborhood name)
-
-Return ONLY valid JSON with no markdown formatting, no code fences, and no explanatory text before or after — the response must be directly parseable by JSON.parse().
-
-Use this exact structure:
+                    messages: [
+                        {
+                            role: "system",
+                            content: "You are a professional local travel guide for Bangladesh. Generate compact, highly specific, and accurate travel itineraries in JSON format. Do not include markdown code fences, headers, or any explanatory text."
+                        },
+                        {
+                            role: "user",
+                            content: `Generate a logical ${days}-day itinerary for ${location}, Bangladesh. Ensure a sequential geographic route to minimize travel time. Include real landmark names, local food experiences, and realistic durations. Keep descriptions to 1 practical sentence.
+Return ONLY valid JSON matching this exact structure containing day1 to day${days}:
 {
   "itinerary": {
     "day1": {
-      "morning": { "activity": "string", "description": "string", "duration": "string", "location": "string" },
-      "afternoon": { "activity": "string", "description": "string", "duration": "string", "location": "string" },
-      "evening": { "activity": "string", "description": "string", "duration": "string", "location": "string" }
+      "morning": { "activity": "Real Landmark", "description": "Short tip.", "duration": "2h", "location": "Area name" },
+      "afternoon": { "activity": "Real Landmark/Food", "description": "Short tip.", "duration": "1.5h", "location": "Area name" },
+      "evening": { "activity": "Real Landmark", "description": "Short tip.", "duration": "2h", "location": "Area name" }
     }
-    // continue for day2, day3, etc. up to day${days}
   }
 }`
-                    }],
-                    temperature: 0.7
+                        }
+                    ],
+                    response_format: { type: "json_object" },
+                    temperature: 0.5
                 },
                 {
                     headers: {
@@ -187,17 +166,26 @@ Use this exact structure:
             const parsedData = extractJsonFromResponse(content);
 
             if (parsedData) {
-                setItineraryData(parsedData);
-                if (resultsRef.current) {
-                    resultsRef.current.scrollIntoView({ behavior: 'smooth' });
-                }
+                const newItin = {
+                    location: location,
+                    days: days,
+                    itinerary: parsedData.itinerary || parsedData
+                };
+                setNewlyGenerated(newItin);
+                setExpandedKey('generated');
+                setLocation(''); 
+
+                setTimeout(() => {
+                    if (resultsRef.current) {
+                        resultsRef.current.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }, 100);
             } else {
                 throw new Error('Invalid itinerary format received');
             }
         } catch (error) {
             if (error.name !== 'AbortError') {
-                console.error('Generation failed:', error);
-                setError(getErrorMessage(error));
+                setError(error.response?.data?.error?.message || error.message || 'Network error');
             }
         } finally {
             setIsLoading(false);
@@ -205,71 +193,176 @@ Use this exact structure:
         }
     };
 
-    // Error message handler
-    const getErrorMessage = (error) => {
-        if (error.response) {
-            switch (error.response.status) {
-                case 400: return 'Invalid request';
-                case 402: return 'API service requires payment';
-                case 429: return 'Too many requests';
-                default: return error.response.data?.error?.message || 'API error';
-            }
+    // Fixes the overwrite bug: Now correctly appends, keeps 2, and saves to local storage + DB
+    const saveCurrentItinerary = async () => {
+        if (!newlyGenerated || !loggedUser?._id) return;
+
+        let updatedList = [...savedItineraries];
+
+        // Ejection strategy rule (Max 2 capacity management)
+        if (updatedList.length >= 2) {
+            updatedList.shift(); // Remove oldest record
         }
-        return error.message || 'Network error';
+
+        const newItem = {
+            location: newlyGenerated.location,
+            days: newlyGenerated.days,
+            itinerary: newlyGenerated.itinerary,
+            updatedAt: new Date().toISOString()
+        };
+
+        updatedList.push(newItem);
+
+        try {
+            // Send entire array containing both saved profiles down to backend endpoint securely
+            await axiosPublic.patch(`/itineraries/${loggedUser._id}`, {
+                userId: loggedUser._id,
+                itineraries: updatedList 
+            });
+            
+            // Sync states locally for immediate seamless interface response
+            setSavedItineraries(updatedList);
+            localStorage.setItem(`itineraries_${loggedUser._id}`, JSON.stringify(updatedList));
+            
+            setNewlyGenerated(null);
+            setExpandedKey(updatedList.length - 1); // Expand the newly added one
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Saved Successfully!',
+                text: 'Both itineraries are locked and will persist through refreshes.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        } catch (error) {
+            console.error('Save failed:', error);
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update database records' });
+        }
+    };
+
+    const deleteSavedItinerary = async (indexToDelete) => {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'You will remove this saved travel plan.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#aaa',
+            confirmButtonText: 'Yes, remove it!'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const filteredList = savedItineraries.filter((_, idx) => idx !== indexToDelete);
+                    
+                    await axiosPublic.patch(`/itineraries/${loggedUser._id}`, {
+                        userId: loggedUser._id,
+                        itineraries: filteredList
+                    });
+
+                    setSavedItineraries(filteredList);
+                    localStorage.setItem(`itineraries_${loggedUser._id}`, JSON.stringify(filteredList));
+                    
+                    if (filteredList.length > 0) {
+                        setExpandedKey(0);
+                    } else {
+                        setExpandedKey(null);
+                    }
+
+                    Swal.fire('Removed!', 'Itinerary removed.', 'success');
+                } catch (error) {
+                    console.error('Delete action failure:', error);
+                    Swal.fire('Error', 'Failed to update database records.', 'error');
+                }
+            }
+        });
+    };
+
+    const renderDayTimeline = (targetItinerary) => {
+        const targetObj = targetItinerary.itinerary?.itinerary || targetItinerary.itinerary;
+        if (!targetObj || typeof targetObj !== 'object') return null;
+
+        return (
+            <div className="space-y-6 mt-4 pt-4 border-t border-gray-100">
+                {Object.entries(targetObj).map(([dayKey, dayData]) => (
+                    <div key={dayKey} className="border rounded-lg overflow-hidden bg-white">
+                        <div className="bg-gray-50 px-4 py-2 border-b">
+                            <h3 className="font-semibold text-sm capitalize" style={{ color: colors.primary }}>
+                                {dayKey.replace('day', 'Day ')}
+                            </h3>
+                        </div>
+                        <div className="divide-y divide-gray-100">
+                            {dayData && typeof dayData === 'object' && Object.entries(dayData).map(([timeKey, timeData]) => (
+                                <div key={timeKey} className="p-4 text-sm">
+                                    <div className="flex items-center mb-1">
+                                        <span className="capitalize font-medium mr-2 text-xs px-2 py-0.5 rounded bg-pink-50" style={{ color: colors.secondary }}>
+                                            {timeKey}
+                                        </span>
+                                        <h4 className="font-semibold text-gray-800">
+                                            {timeData?.activity || 'Explore Spot'}
+                                        </h4>
+                                    </div>
+                                    <p className="text-gray-600 my-1">{timeData?.description}</p>
+                                    <div className="flex flex-wrap gap-4 text-xs text-gray-400 mt-2">
+                                        <div className="flex items-center"><FaClock className="mr-1" />{timeData?.duration || 'Flexible'}</div>
+                                        <div className="flex items-center"><FaMapMarkerAlt className="mr-1" />{timeData?.location || 'Local Destination'}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
     };
 
     return (
         <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
-            <div className="max-w-6xl mx-auto p-4 md:p-8">
+            <div className="max-w-4xl mx-auto p-4 md:p-8">
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold mb-2" style={{ color: colors.text }}>
-                        Travel Itinerary Generator
+                        Travel Itinerary Planner
                     </h1>
-                    <p className="text-lg" style={{ color: colors.primary }}>
-                        Plan your perfect trip across Bangladesh
+                    <p className="text-sm font-medium" style={{ color: colors.primary }}>
+                        Saves 2 configurations securely • Instant performance cached loads
                     </p>
                 </div>
 
-                {/* Input Form */}
-                <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+                {/* Form Input Container */}
+                <div className="bg-white rounded-xl shadow-sm p-6 mb-8 border border-pink-100">
                     <form onSubmit={generateItinerary} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
-                                    Destination
-                                </label>
+                                <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-gray-500">Destination</label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <FaMapMarkerAlt className="text-gray-400" />
+                                        <FaMapMarkerAlt className="text-gray-400 text-sm" />
                                     </div>
                                     <input
                                         type="text"
                                         value={location}
                                         onChange={(e) => setLocation(e.target.value)}
-                                        placeholder="e.g. Cox's Bazar"
-                                        className="pl-10 w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                        style={{ borderColor: colors.primary }}
+                                        placeholder="e.g. Cox's Bazar, Sreemangal"
+                                        className="pl-9 w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400"
+                                        style={{ borderColor: '#E5E7EB' }}
                                         required
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
-                                    Days
-                                </label>
+                                <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-gray-500">Duration</label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <FaCalendarAlt className="text-gray-400" />
+                                        <FaCalendarAlt className="text-gray-400 text-sm" />
                                     </div>
                                     <select
                                         value={days}
                                         onChange={(e) => setDays(parseInt(e.target.value))}
-                                        className="pl-10 w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                        style={{ borderColor: colors.primary }}
+                                        className="pl-9 w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 bg-white"
+                                        style={{ borderColor: '#E5E7EB' }}
                                     >
                                         {[1, 2, 3, 4, 5, 6, 7].map(num => (
-                                            <option key={num} value={num}>{num} day{num !== 1 ? 's' : ''}</option>
+                                            <option key={num} value={num}>{num} Day{num !== 1 ? 's' : ''}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -279,106 +372,112 @@ Use this exact structure:
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="w-full px-4 py-2 rounded-lg text-white font-medium hover:opacity-90 transition-opacity"
+                                    className="w-full px-4 py-2 rounded-lg text-white text-sm font-semibold hover:opacity-90 transition-all shadow-sm"
                                     style={{ backgroundColor: colors.primary }}
                                 >
-                                    {isLoading ? 'Generating...' : 'Generate Itinerary'}
+                                    {isLoading ? 'Generating Plan...' : 'Generate Itinerary'}
                                 </button>
                             </div>
                         </div>
                     </form>
                 </div>
 
-                {/* Results Section */}
                 <div ref={resultsRef}>
                     {error && (
-                        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
+                        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-r-lg text-sm">
                             <p>{error}</p>
                         </div>
                     )}
 
                     {isLoading && (
-                        <div className="flex justify-center items-center p-8">
-                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2" style={{ borderColor: colors.primary }}></div>
+                        <div className="flex justify-center items-center p-8 bg-white rounded-xl shadow-sm mb-6 border border-gray-100">
+                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style={{ borderColor: colors.primary }}></div>
                             <button
                                 onClick={stopGeneration}
-                                className="ml-4 flex items-center space-x-2 px-4 py-2 rounded-lg text-white"
+                                className="ml-4 flex items-center space-x-2 px-3 py-1.5 rounded-lg text-white text-xs font-medium"
                                 style={{ backgroundColor: colors.accent }}
                             >
-                                <FaStop />
-                                <span>Stop Generation</span>
+                                <FaStop className="text-xs" />
+                                <span>Cancel</span>
                             </button>
                         </div>
                     )}
 
-                    {(itineraryData || existingItinerary) && (
-                        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
-                            <div className="p-6">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-2xl font-bold" style={{ color: colors.text }}>
-                                        {location} Itinerary ({days} day{days !== 1 ? 's' : ''})
-                                    </h2>
-                                    <div className="flex space-x-2">
-                                        {previousItinerary && (
-                                            <button
-                                                onClick={restorePreviousItinerary}
-                                                className="flex items-center space-x-2 px-4 py-2 rounded-lg text-white"
-                                                style={{ backgroundColor: colors.secondary }}
-                                            >
-                                                <FaUndo />
-                                                <span>Restore Previous</span>
-                                            </button>
-                                        )}
+                    <div className="space-y-3">
+                        {/* 1. UNSAVED TRANSIENT SEARCH CARD */}
+                        {newlyGenerated && (
+                            <div className="bg-white rounded-xl shadow-sm overflow-hidden border-2 border-dashed transition-all animate-fade-in" style={{ borderColor: colors.primary }}>
+                                <div 
+                                    className="p-4 flex justify-between items-center cursor-pointer select-none bg-red-50/40"
+                                    onClick={() => setExpandedKey(expandedKey === 'generated' ? null : 'generated')}
+                                >
+                                    <div>
+                                        <div className="flex items-center space-x-2">
+                                            <span className="bg-red-500 text-white font-bold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide">Unsaved Result</span>
+                                            <h2 className="text-lg font-bold text-gray-800">
+                                                {newlyGenerated.location} ({newlyGenerated.days} Days)
+                                            </h2>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center space-x-3">
                                         <button
-                                            onClick={saveItinerary}
-                                            className="flex items-center space-x-2 px-4 py-2 rounded-lg text-white"
+                                            onClick={(e) => { e.stopPropagation(); saveCurrentItinerary(); }}
+                                            className="flex items-center space-x-1.5 px-3 py-1 rounded-md text-white text-xs font-semibold shadow-sm hover:opacity-90 transition-opacity"
                                             style={{ backgroundColor: colors.accent }}
                                         >
-                                            <FaSave />
-                                            <span>Save Itinerary</span>
+                                            <FaSave className="text-xs" />
+                                            <span>Save Plan</span>
                                         </button>
+                                        {expandedKey === 'generated' ? <FaChevronUp className="text-gray-400" /> : <FaChevronDown className="text-gray-400" />}
                                     </div>
                                 </div>
-
-                                <div className="space-y-8">
-                                    {Object.entries((itineraryData || existingItinerary.itinerary).itinerary).map(([dayKey, dayData]) => (
-                                        <div key={dayKey} className="border rounded-lg overflow-hidden">
-                                            <div className="bg-gray-50 px-4 py-3 border-b">
-                                                <h3 className="font-semibold" style={{ color: colors.primary }}>
-                                                    {dayKey.replace('day', 'Day ')}
-                                                </h3>
-                                            </div>
-                                            <div className="divide-y">
-                                                {Object.entries(dayData).map(([timeKey, timeData]) => (
-                                                    <div key={timeKey} className="p-4">
-                                                        <div className="flex items-center mb-2">
-                                                            <span className="capitalize font-medium mr-2" style={{ color: colors.secondary }}>
-                                                                {timeKey}:
-                                                            </span>
-                                                            <h4 className="font-medium" style={{ color: colors.text }}>
-                                                                {timeData.activity}
-                                                            </h4>
-                                                        </div>
-                                                        <p className="text-gray-600 mb-2">{timeData.description}</p>
-                                                        <div className="flex flex-wrap gap-4 text-sm">
-                                                            <div className="flex items-center text-gray-500">
-                                                                <FaClock className="mr-1" />
-                                                                {timeData.duration}
-                                                            </div>
-                                                            <div className="flex items-center text-gray-500">
-                                                                <FaMapMarkerAlt className="mr-1" />
-                                                                {timeData.location}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                {expandedKey === 'generated' && (
+                                    <div className="p-4 bg-white">
+                                        {renderDayTimeline(newlyGenerated)}
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    )}
+                        )}
+
+                        {/* 2. DYNAMIC SAVED PROFILE ACCORDION CARDS */}
+                        {savedItineraries.map((savedItem, idx) => {
+                            const isExpanded = expandedKey === idx;
+                            return (
+                                <div key={idx} className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 transition-all">
+                                    <div 
+                                        className="p-4 flex justify-between items-center cursor-pointer select-none hover:bg-gray-50/50"
+                                        onClick={() => setExpandedKey(isExpanded ? null : idx)}
+                                    >
+                                        <div>
+                                            <h2 className={`font-bold transition-all ${isExpanded ? 'text-lg text-gray-800' : 'text-sm text-gray-500'}`}>
+                                                {savedItem.location} <span className="font-normal text-xs text-gray-400">({savedItem.days} Days Plan)</span>
+                                            </h2>
+                                        </div>
+                                        <div className="flex items-center space-x-3">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); deleteSavedItinerary(idx); }}
+                                                className="p-2 text-gray-400 hover:text-red-600 transition-colors rounded-full hover:bg-red-50"
+                                            >
+                                                <FaTrash className="text-xs" />
+                                            </button>
+                                            {isExpanded ? <FaChevronUp className="text-gray-400 text-xs" /> : <FaChevronDown className="text-gray-400 text-xs" />}
+                                        </div>
+                                    </div>
+                                    {isExpanded && (
+                                        <div className="p-4 bg-white">
+                                            {renderDayTimeline(savedItem)}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+
+                        {!newlyGenerated && savedItineraries.length === 0 && !isLoading && (
+                            <div className="text-center py-12 text-gray-400 text-sm bg-white rounded-xl border border-dashed border-gray-200">
+                                Enter your next setup configuration above to run custom generation itineraries.
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
