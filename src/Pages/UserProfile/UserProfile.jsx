@@ -4,110 +4,81 @@ import { ChevronRightIcon, CameraIcon } from '@heroicons/react/24/solid';
 import useAuth from '../../hooks/useAuth';
 import ProfileTab from './ProfileTab/ProfileTab';
 import useAxiosSecure from '../../hooks/useAxiosSecure';
-import { useQueryClient } from '@tanstack/react-query';
 import Swal from 'sweetalert2';
+import axios from "axios";
 
 const UserProfile = () => {
-    const { loggedUser } = useAuth();
+    const { loggedUser,fetchUserData } = useAuth();
     const [activeTab, setActiveTab] = useState('Profile');
-    const [userData, setUserData] = useState(loggedUser);
 
     const fileInputRef = useRef(null);
     const axiosSecure = useAxiosSecure();
-    const queryClient = useQueryClient();
 
     const tabs = [
         'Profile',
     ];
 
-    const handleImageUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
 
-        try {
-            // 1. Show temporary image immediately
-            const tempUrl = URL.createObjectURL(file);
-            updateUser({ ...loggedUser, image: tempUrl });
+const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
 
-            // 2. Upload to imgBB
-            const formData = new FormData();
-            formData.append('image', file);
+    if (!file) return;
 
-            const imgbbResponse = await axiosSecure.post(
-                `https://api.imgbb.com/1/upload?key=${process.env.ImagebbApiKey}`,
-                formData,
-                {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
-                }
-            );
+    try {
 
-            if (imgbbResponse.data.success) {
-                const imageUrl = imgbbResponse.data.data.url;
+        const formData = new FormData();
 
-                // 3. Update database with permanent URL
-                await handleProfileUpdate({ image: imageUrl });
+        formData.append("image", file);
 
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Profile picture updated!',
-                    showConfirmButton: false,
-                    timer: 1500
-                });
-            }
-        } catch (error) {
-            // Revert on error
-            updateUser(loggedUser);
-
-            Swal.fire({
-                icon: 'error',
-                title: 'Upload failed',
-                text: error.response?.data?.message || error.message,
-            });
-            console.error('Image upload failed:', error);
-        }
-    };
-
-    const handleProfileUpdate = async (updateData) => {
-        // Use TanStack Query's mutation for updating user profile
-        const mutation = queryClient.getMutationCache().build(
-            queryClient,
-            {
-                mutationKey: ['updateUser', loggedUser._id],
-                mutationFn: async (updateData) => {
-                    const response = await axiosSecure.patch(`/users/${loggedUser._id}`, updateData);
-                    if (response.data.modifiedCount === 1) {
-                        return { ...loggedUser, ...updateData };
-                    }
-                    throw new Error('No documents were modified');
-                },
-                onMutate: async (updateData) => {
-                    // Optimistically update UI
-                    const previousUser = queryClient.getQueryData(['user', loggedUser._id]);
-                    const updatedUser = { ...loggedUser, ...updateData };
-                    updateUser(updatedUser);
-                    setUserData(updatedUser);
-                    console.log('Optimistically updating user data:', userData);
-                    queryClient.setQueryData(['user', loggedUser._id], updatedUser);
-                    return { previousUser };
-                },
-                onError: (error, _variables, context) => {
-                    // Revert on error
-                    updateUser(context.previousUser);
-                    setUserData(context.previousUser);
-                    queryClient.setQueryData(['user', loggedUser._id], context.previousUser);
-                },
-                onSuccess: async (data) => {
-                    setUserData(data);
-                    await queryClient.refetchQueries({ queryKey: ['user', loggedUser._id] });
-                }
-            },
-            updateData
+        const upload = await axios.post(
+            `https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_ImagebbApiKey}`,
+            formData
         );
-        await mutation.execute(updateData);
+
+        const imageUrl = upload.data.data.url;
+
+        await axiosSecure.patch(`/users/${loggedUser._id}`, {
+            image: imageUrl
+        });
+
+        await fetchUserData(loggedUser.email);
+
+        Swal.fire({
+            icon: "success",
+            title: "Profile picture updated",
+            timer: 1500,
+            showConfirmButton: false
+        });
+
+    } catch (err) {
+
+        console.log(err);
+
+        Swal.fire({
+            icon: "error",
+            title: "Upload Failed",
+            text: err.message
+        });
+
+    }
+
+};
+
+const handleProfileUpdate = async (updateData) => {
+    const response = await axiosSecure.patch(
+        `/users/${loggedUser._id}`,
+        updateData
+    );
+
+    if (response.data.modifiedCount > 0) {
+        await fetchUserData(loggedUser.email);
         return true;
-    };
+    }
+
+    throw new Error("Profile update failed");
+};
+
+    
 
     const triggerFileInput = () => {
         fileInputRef.current.click();
@@ -143,7 +114,10 @@ const UserProfile = () => {
                 return null;
         }
     };
-
+<ProfileTab
+    user={loggedUser}
+    onEdit={() => {}}
+/>
     return (
         <div className="min-h-screen  py-8 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
