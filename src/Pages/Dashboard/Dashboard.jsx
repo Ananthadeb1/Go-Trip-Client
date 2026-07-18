@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     faBars, faTimes, faUsers,
     faChartLine, faHotel, faCalendarAlt,
@@ -9,10 +10,21 @@ import UserManagement from './UserManagement/UserManagement';
 import BookingManagement from './UserManagement/BookingManagement/BookingManagement';
 import BillingManagement from './BillingManagement/BillingManagement';
 import Analytics from './BillingManagement/Analytics/Analytics';
+import useAdmin from '../../hooks/useAdmin';
 
 const Dashboard = () => {
     const [selected, setSelected] = useState('User Management');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isAdmin] = useAdmin();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (isAdmin === false) {
+            // if not admin, redirect away from dashboard
+            navigate('/', { replace: true });
+        }
+    }, [isAdmin, navigate]);
+
 
     const menuItems = [
         { name: 'User Management', icon: faUsers },

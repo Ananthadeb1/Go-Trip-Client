@@ -1,93 +1,18 @@
 /* eslint-disable no-unused-vars */
-import { useState, useEffect, useMemo, memo } from "react";
+import { useState } from "react";
 import useAxiosPublic from "../../hooks/useAxiosPublic";
 import { Link } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { faFilter, faMagnifyingGlass, faSort, faStar, faMapMarkerAlt, faUserFriends, faBed, faWifi, faSwimmingPool, faUtensils } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import DatePicker from "react-datepicker";
 import { motion } from "framer-motion";
 import { fadeIn, staggerContainer } from "../../Utils/Motion/Motion";
 import VehicleBooking from "./VehicleBooking/VehicleBooking";
-import "react-datepicker/dist/react-datepicker.css";
-
-// --- CACHED HOTEL CARD TO PREVENT INPUT LAG ---
-const MemoizedHotelCard = memo(({ hotel, cardVariants, amenityIcons, formatDate }) => {
-    if (hotel.empty) {
-        return <div className="h-full bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 hidden md:block"></div>;
-    }
-
-    return (
-        <motion.div
-            variants={cardVariants}
-            className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-300 border border-gray-100 overflow-hidden flex flex-col h-full"
-        >
-            <div className="relative h-48 bg-gray-200">
-                <img 
-                    src={hotel.images?.[0] || "https://images.unsplash.com/photo-1566073771259-6a8506099945"} 
-                    alt={hotel.name}
-                    className="w-full h-full object-cover"
-                />
-                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-gray-700 flex items-center gap-1">
-                    <FontAwesomeIcon icon={faStar} className="text-amber-400" />
-                    <span>{hotel.averageRating}</span>
-                </div>
-            </div>
-
-            <div className="p-5 flex flex-col flex-grow">
-                <div className="flex justify-between items-start gap-2 mb-2">
-                    <h3 className="font-bold text-gray-800 text-lg line-clamp-1">{hotel.name}</h3>
-                    <span className="text-xs bg-rose-50 text-[#FF2056] font-semibold px-2.5 py-1 rounded-md whitespace-nowrap">
-                        {hotel.roomDetails.type}
-                    </span>
-                </div>
-
-                <p className="text-gray-500 text-sm flex items-center gap-1.5 mb-4">
-                    <FontAwesomeIcon icon={faMapMarkerAlt} className="text-gray-400 text-xs" />
-                    <span className="line-clamp-1">{hotel.location}</span>
-                </p>
-
-                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-4 bg-gray-50 p-2.5 rounded-xl">
-                    <div className="flex items-center gap-1.5">
-                        <FontAwesomeIcon icon={faUserFriends} className="text-gray-400" />
-                        <span>Max {hotel.roomDetails.maxOccupancy} Guests</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <FontAwesomeIcon icon={faBed} className="text-gray-400" />
-                        <span>{hotel.roomDetails.bedOptions || "Standard Bed"}</span>
-                    </div>
-                </div>
-
-                <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
-                    <div>
-                        <span className="text-2xl font-black text-gray-900">${hotel.roomDetails.pricePerNight}</span>
-                        <span className="text-gray-500 text-xs font-medium"> / night</span>
-                    </div>
-                    <Link 
-                        to={`/hotel/${hotel._id}/room/${hotel.roomIndex}`}
-                        className="px-4 py-2 bg-[#FF2056] text-white text-sm font-semibold rounded-xl hover:bg-[#E61C4D] transition-colors"
-                    >
-                        Book Now
-                    </Link>
-                </div>
-            </div>
-        </motion.div>
-    );
-});
-MemoizedHotelCard.displayName = "MemoizedHotelCard";
 
 const Booking = () => {
     const axioxPublic = useAxiosPublic();
-    const queryClient = useQueryClient(); // Used for prefetching
 
-    const [currentPage, setCurrentPage] = useState(1);
-    const [selectedOption, setSelectedOption] = useState("Hotel");
-    const [searchErrors, setSearchErrors] = useState({});
-
-    // Dynamic Tab Check for Lazy Conditional Fetching
-    const isTransitTabActive = selectedOption === "Transit Assets";
-
-    // 1. HOTEL QUERY (Loads immediately)
     const { data: hotels, isLoading, isError } = useQuery({
         queryKey: ["hotels"],
         queryFn: async () => {
@@ -97,7 +22,7 @@ const Booking = () => {
         },
     });
 
-    // 2. LAZY CONDITIONAL QUERIES (Network overhead saved until transit tab is opened)
+    // Load bus and train data after hotels are loaded
     const { data: buses } = useQuery({
         queryKey: ["buses"],
         queryFn: async () => {
@@ -105,7 +30,7 @@ const Booking = () => {
             const response = await axioxPublic.get("/buses");
             return response.data;
         },
-        enabled: !!hotels && isTransitTabActive,
+        enabled: !!hotels,
     });
 
     const { data: trains } = useQuery({
@@ -115,12 +40,14 @@ const Booking = () => {
             const response = await axioxPublic.get("/trains");
             return response.data;
         },
-        enabled: !!hotels && isTransitTabActive,
+        enabled: !!hotels,
     });
-
-    // Cache vehicular combination
-    const vehicleData = useMemo(() => ({ buses, trains }), [buses, trains]);
+    const vehicleData = { buses, trains };
     console.log("from booking", vehicleData);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [selectedOption, setSelectedOption] = useState("Hotel");
+    const [searchErrors, setSearchErrors] = useState({});
 
     // Search states
     const [searchParams, setSearchParams] = useState({
@@ -138,36 +65,50 @@ const Booking = () => {
         totalPersons: ""
     });
 
-    // 3. DEBOUNCED INPUT SEARCH STATE (Prevents sluggish keystrokes)
-    const [debouncedDestinationText, setDebouncedDestinationText] = useState("");
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedDestinationText(searchParams.destination);
-        }, 250);
-        return () => clearTimeout(timer);
-    }, [searchParams.destination]);
+    if (isLoading) return (
+        <div className="flex justify-center items-center h-screen ">
+            <div className="animate-pulse flex flex-col items-center">
+                <div className="h-16 w-16 bg-[#FF2056] rounded-full mb-4"></div>
+                <p className="text-[#FF2056] font-medium">Loading amazing stays...</p>
+            </div>
+        </div>
+    );
 
-    // 4. FAST CASE-INSENSITIVE PRE-COMPILED REGEX MATCHING
-    const optimizedSearchRegex = useMemo(() => {
-        const textToFilter = appliedFilters.destination || debouncedDestinationText;
-        if (!textToFilter.trim()) return null;
-        try {
-            return new RegExp(textToFilter.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i');
-        } catch {
-            return null;
-        }
-    }, [appliedFilters.destination, debouncedDestinationText]);
+    if (isError) return (
+        <div className="flex justify-center items-center h-screen bg-gradient-to-br from-[#FFF5F7] to-[#FFEAEE]">
+            <div className="text-center p-6 bg-white rounded-xl shadow-lg">
+                <p className="text-red-500 text-lg font-medium">Error loading hotels. Please try again later.</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="mt-4 px-4 py-2 bg-[#FF2056] text-white rounded-lg hover:bg-[#E61C4D] transition-colors"
+                >
+                    Retry
+                </button>
+            </div>
+        </div>
+    );
 
     const itemsPerPage = 9;
 
-    // Memoize options lists to avoid recalculation loops on render
-    const destinations = useMemo(() => [...new Set(hotels?.map((hotel) => hotel.location))], [hotels]);
-    const roomTypes = useMemo(() => [...new Set(hotels?.flatMap(hotel => hotel.rooms.map(room => room.type)))], [hotels]);
+    // Get unique destinations and room types
+    const destinations = [...new Set(hotels?.map((hotel) => hotel.location))];
+    const roomTypes = [...new Set(hotels?.flatMap(hotel => hotel.rooms.map(room => room.type)))];
 
     // Animation variants
     const cardVariants = {
-        offscreen: { y: 50, opacity: 0 },
-        onscreen: { y: 0, opacity: 1, transition: { type: "spring", bounce: 0.4, duration: 0.8 } }
+        offscreen: {
+            y: 50,
+            opacity: 0
+        },
+        onscreen: {
+            y: 0,
+            opacity: 1,
+            transition: {
+                type: "spring",
+                bounce: 0.4,
+                duration: 0.8
+            }
+        }
     };
 
     // Validate search form
@@ -196,66 +137,54 @@ const Booking = () => {
         setCurrentPage(1);
     };
 
-    // 5. CACHED DATA WRAPPING: Filter and Sort Pipeline (Calculates Instantly via useMemo)
-    const sortedHotels = useMemo(() => {
-        if (!hotels) return [];
+    // Filter hotels based on all criteria
+    const filteredHotels = hotels?.filter(hotel => {
+        const matchesDestination = !appliedFilters.destination ||
+            hotel.location.toLowerCase().includes(appliedFilters.destination.toLowerCase());
+        return matchesDestination;
+    }).flatMap(hotel => {
+        return hotel.rooms
+            .filter(room => {
+                const matchesRoomType = !searchParams.roomTypeFilter ||
+                    room.type === searchParams.roomTypeFilter;
+                const matchesOccupancy = !appliedFilters.totalPersons ||
+                    room.maxOccupancy >= parseInt(appliedFilters.totalPersons);
+                return matchesRoomType && matchesOccupancy;
+            })
+            .map((room, roomIndex) => ({
+                ...hotel,
+                roomDetails: room,
+                roomIndex,
+                averageRating: hotel.reviews?.length > 0
+                    ? (hotel.reviews.reduce((sum, review) => sum + review.rating, 0) / hotel.reviews.length).toFixed(1)
+                    : "No ratings"
+            }));
+    });
 
-        const structuralFilter = hotels.filter(hotel => {
-            if (!optimizedSearchRegex) return true;
-            return optimizedSearchRegex.test(hotel.location);
-        }).flatMap(hotel => {
-            return hotel.rooms
-                .filter(room => {
-                    const matchesRoomType = !searchParams.roomTypeFilter || room.type === searchParams.roomTypeFilter;
-                    const matchesOccupancy = !appliedFilters.totalPersons || room.maxOccupancy >= parseInt(appliedFilters.totalPersons);
-                    return matchesRoomType && matchesOccupancy;
-                })
-                .map((room, roomIndex) => ({
-                    ...hotel,
-                    roomDetails: room,
-                    roomIndex,
-                    averageRating: hotel.reviews?.length > 0
-                        ? (hotel.reviews.reduce((sum, review) => sum + review.rating, 0) / hotel.reviews.length).toFixed(1)
-                        : "No ratings"
-                }));
-        });
-
+    // Sort the filtered results
+    const sortedHotels = [...(filteredHotels || [])].sort((a, b) => {
         if (searchParams.sortOption === "price-high-low") {
-            return structuralFilter.sort((a, b) => b.roomDetails.pricePerNight - a.roomDetails.pricePerNight);
+            return b.roomDetails.pricePerNight - a.roomDetails.pricePerNight;
         } else if (searchParams.sortOption === "price-low-high") {
-            return structuralFilter.sort((a, b) => a.roomDetails.pricePerNight - b.roomDetails.pricePerNight);
+            return a.roomDetails.pricePerNight - b.roomDetails.pricePerNight;
         } else if (searchParams.sortOption === "rating-high-low") {
-            return structuralFilter.sort((a, b) => {
-                const ratingA = a.averageRating === "No ratings" ? 0 : parseFloat(a.averageRating);
-                const ratingB = b.averageRating === "No ratings" ? 0 : parseFloat(b.averageRating);
-                return ratingB - ratingA;
-            });
+            return (b.averageRating === "No ratings" ? 0 : parseFloat(b.averageRating)) -
+                (a.averageRating === "No ratings" ? 0 : parseFloat(a.averageRating));
         }
-        return structuralFilter;
-    }, [hotels, optimizedSearchRegex, searchParams.roomTypeFilter, searchParams.sortOption, appliedFilters.totalPersons]);
+        return 0;
+    });
 
     const totalPages = Math.ceil((sortedHotels?.length || 0) / itemsPerPage) || 1;
-    
-    // Memoized Paginated Slots Calculation
-    const displayHotels = useMemo(() => {
-        const paginated = sortedHotels.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-        const placeholderArray = [...paginated];
-        while (placeholderArray.length < itemsPerPage && placeholderArray.length > 0) {
-            placeholderArray.push({ empty: true });
-        }
-        return placeholderArray;
-    }, [sortedHotels, currentPage]);
+    const paginatedHotels = sortedHotels?.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
-    // 6. QUERY PREFETCH DATA LAYER ON HOVER
-    const handlePrefetchAdjacentPage = (pageIndex) => {
-        if (pageIndex < 1 || pageIndex > totalPages) return;
-        // Prefetches the query data cache pool in advance inside TanStack Query cache
-        queryClient.prefetchQuery({
-            queryKey: ["hotels", pageIndex],
-            queryFn: async () => hotels, // Adjust to an explicit paginated endpoint call if your API changes to support backend pagination
-            staleTime: 10000,
-        });
-    };
+    // Fill empty slots if less than 9 cards
+    const displayHotels = paginatedHotels ? [...paginatedHotels] : [];
+    while (displayHotels.length < itemsPerPage && displayHotels.length > 0) {
+        displayHotels.push({ empty: true });
+    }
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -291,28 +220,6 @@ const Booking = () => {
         'breakfast': faUtensils
     };
 
-    if (isLoading) return (
-        <div className="flex justify-center items-center h-screen ">
-            <div className="animate-pulse flex flex-col items-center">
-                <div className="h-16 w-16 bg-[#FF2056] rounded-full mb-4"></div>
-                <p className="text-[#FF2056] font-medium">Loading amazing stays...</p>
-            </div>
-        </div>
-    );
-
-    if (isError) return (
-        <div className="flex justify-center items-center h-screen bg-gradient-to-br from-[#FFF5F7] to-[#FFEAEE]">
-            <div className="text-center p-6 bg-white rounded-xl shadow-lg">
-                <p className="text-red-500 text-lg font-medium">Error loading hotels. Please try again later.</p>
-                <button
-                    onClick={() => window.location.reload()}
-                    className="mt-4 px-4 py-2 bg-[#FF2056] text-white rounded-lg hover:bg-[#E61C4D] transition-colors"
-                >
-                    Retry
-                </button>
-            </div>
-        </div>
-    );
     return (
         <div className="min-h-screen py-8 relative">
             <motion.div
