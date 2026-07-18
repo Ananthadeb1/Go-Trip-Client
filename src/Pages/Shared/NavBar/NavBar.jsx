@@ -1,7 +1,10 @@
+/* eslint-disable no-unused-vars */
 import { NavLink, Link } from "react-router-dom";
 import useAdmin from "../../../hooks/useAdmin";
 import useAuth from "../../../hooks/useAuth";
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import useAxiosPublic from "../../../hooks/useAxiosPublic";
 
 const NavBar = () => {
     const [isAdmin] = useAdmin();
@@ -9,6 +12,10 @@ const NavBar = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [prevScrollPos, setPrevScrollPos] = useState(0);
     const [visible, setVisible] = useState(true);
+    
+    // Access TanStack Query client and public axios hook
+    const queryClient = useQueryClient();
+    const axiosPublic = useAxiosPublic();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -21,6 +28,42 @@ const NavBar = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, [prevScrollPos]);
 
+    // Prefetch all data required by the Booking page when hovered
+    const prefetchBookingData = async () => {
+        try {
+            // Prefetch hotels first
+            await queryClient.prefetchQuery({
+                queryKey: ["hotels"],
+                queryFn: async () => {
+                    const response = await axiosPublic.get("/hotels");
+                    return response.data;
+                },
+                staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
+            });
+
+            // Prefetch transport assets simultaneously 
+            queryClient.prefetchQuery({
+                queryKey: ["buses"],
+                queryFn: async () => {
+                    const response = await axiosPublic.get("/buses");
+                    return response.data;
+                },
+                staleTime: 1000 * 60 * 5,
+            });
+
+            queryClient.prefetchQuery({
+                queryKey: ["trains"],
+                queryFn: async () => {
+                    const response = await axiosPublic.get("/trains");
+                    return response.data;
+                },
+                staleTime: 1000 * 60 * 5,
+            });
+        } catch (error) {
+            console.error("Prefetch failed safely:", error);
+        }
+    };
+
     const handleLogOut = () => {
         logout()
             .then(() => setMobileMenuOpen(false))
@@ -29,7 +72,7 @@ const NavBar = () => {
 
     const navLinks = [
         { path: "/", label: "Home" },
-        { path: "/booking", label: "Booking" },
+        { path: "/booking", label: "Booking", prefetch: true },
         ...(user ? [{ path: "/Booking_Status", label: "Booking Status" }] : []),
         ...(user ? [{ path: "/History", label: "History" }] : []),
         ...(user ? [{ path: "/Expense_Tracking", label: "Expense Tracking" }] : []),
@@ -53,6 +96,8 @@ const NavBar = () => {
                                 <NavLink
                                     key={link.path}
                                     to={link.path}
+                                    onMouseEnter={link.prefetch ? prefetchBookingData : undefined}
+                                    onTouchStart={link.prefetch ? prefetchBookingData : undefined}
                                     className={({ isActive }) =>
                                         `px-2 py-2 font-medium transition-colors duration-300 border-b-2 ${isActive
                                             ? 'text-[#FF2056] border-[#FF2056]'
@@ -64,7 +109,7 @@ const NavBar = () => {
                             ))}
                         </div>
 
-                        {/* user/Auth Section */}
+                        {/* User/Auth Section */}
                         {user ? (
                             <div className="ml-6 flex items-center">
                                 <div className="dropdown dropdown-end">
@@ -153,6 +198,7 @@ const NavBar = () => {
                             key={link.path}
                             to={link.path}
                             onClick={() => setMobileMenuOpen(false)}
+                            onMouseEnter={link.prefetch ? prefetchBookingData : undefined}
                             className={({ isActive }) =>
                                 `block px-3 py-2 rounded-md text-base font-medium ${isActive
                                     ? 'text-[#FF2056] bg-[#FFEAEE]'
@@ -165,7 +211,7 @@ const NavBar = () => {
                     {user ? (
                         <>
                             <NavLink
-                                to="/userProfile"
+                                Mills to="/userProfile"
                                 onClick={() => setMobileMenuOpen(false)}
                                 className={({ isActive }) =>
                                     `block px-3 py-2 rounded-md text-base font-medium ${isActive
