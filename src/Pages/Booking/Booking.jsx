@@ -9,6 +9,7 @@ import DatePicker from "react-datepicker";
 import { motion } from "framer-motion";
 import { fadeIn, staggerContainer } from "../../Utils/Motion/Motion";
 import VehicleBooking from "./VehicleBooking/VehicleBooking";
+import "react-datepicker/dist/react-datepicker.css";
 
 const Booking = () => {
     const axioxPublic = useAxiosPublic();
