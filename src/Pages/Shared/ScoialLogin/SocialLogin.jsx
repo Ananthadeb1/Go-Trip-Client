@@ -5,10 +5,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import useAxiosPublic from '../../../hooks/useAxiosPublic';
 
 const SocialLogin = () => {
-    const { loginWithGoogle, updateUserProfile, fetchUserData } = useContext(AuthContext);
+    const { loginWithGoogle, fetchUserData } = useContext(AuthContext);
     const navigate = useNavigate();
     const location = useLocation();
-    const from = location.state?.from?.pathname || "/";
+    // const from = location.state?.from?.pathname || "/";
     const axiosPublic = useAxiosPublic();
 
     const handleGoogleLogin = () => {
