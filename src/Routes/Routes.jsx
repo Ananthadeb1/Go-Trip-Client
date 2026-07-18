@@ -1,21 +1,29 @@
-import {
-    createBrowserRouter,
-} from "react-router-dom";
-import Home from "../Pages/Home/Home/Home";
-import Main from "../Layout/Main";
-import Login from "../Pages/Login/Login";
-import Signup from "../Pages/Signup/Signup";
-import PrivateRoute from "../Pages/Shared/PrivateRoute/PrivateRoute";
-import Booking from "../Pages/Booking/Booking";
-import Dashboard from "../Pages/Dashboard/Dashboard";
-import HotelDetails from "../Pages/Booking/HotelDetails/HotelDetails";
-import UserProfile from "../Pages/UserProfile/UserProfile";
-import GoogleMap from "../Map/GoogleMap/GoogleMap";
-import Itinerary from "../Pages/UserProfile/Itinerary/Itinerary";
-import BookingStatusTab from "../Pages/UserProfile/BookingStatusTab/BookingStatusTab";
-import HistoryTab from "../Pages/UserProfile/HistoryTab/HistoryTab";
-import ExpenseTrackingTab from "../Pages/UserProfile/ExpenseTrackingTab/ExpenseTrackingTab";
+import { lazy, Suspense } from "react";
+import { createBrowserRouter } from "react-router-dom";
 
+// Keep Main and PrivateRoute static because they control basic layout and security
+import Main from "../Layout/Main";
+import PrivateRoute from "../Pages/Shared/PrivateRoute/PrivateRoute";
+
+// Convert your pages into lazy loaded components
+const Home = lazy(() => import("../Pages/Home/Home/Home"));
+const Login = lazy(() => import("../Pages/Login/Login"));
+const Signup = lazy(() => import("../Pages/Signup/Signup"));
+const Booking = lazy(() => import("../Pages/Booking/Booking"));
+const Dashboard = lazy(() => import("../Pages/Dashboard/Dashboard"));
+const HotelDetails = lazy(() => import("../Pages/Booking/HotelDetails/HotelDetails"));
+const UserProfile = lazy(() => import("../Pages/UserProfile/UserProfile"));
+const Itinerary = lazy(() => import("../Pages/UserProfile/Itinerary/Itinerary"));
+const BookingStatusTab = lazy(() => import("../Pages/UserProfile/BookingStatusTab/BookingStatusTab"));
+const HistoryTab = lazy(() => import("../Pages/UserProfile/HistoryTab/HistoryTab"));
+const ExpenseTrackingTab = lazy(() => import("../Pages/UserProfile/ExpenseTrackingTab/ExpenseTrackingTab"));
+
+// A quick loading wrapper helper to keep your code clean
+const withSuspense = (Component) => (
+    <Suspense fallback={<div className="loading-spinner">Loading page...</div>}>
+        {Component}
+    </Suspense>
+);
 
 export const router = createBrowserRouter([
     {
@@ -24,75 +32,48 @@ export const router = createBrowserRouter([
         children: [
             {
                 path: "/",
-                element: <Home></Home>,
+                element: withSuspense(<Home />),
             },
             {
                 path: "/login",
-                element: <Login></Login>,
+                element: withSuspense(<Login />),
             },
             {
                 path: "/signup",
-                element: <Signup></Signup>
+                element: withSuspense(<Signup />)
             },
             {
                 path: "/dashboard",
-                element: <PrivateRoute>
-                    <Dashboard></Dashboard>
-                </PrivateRoute>
+                element: <PrivateRoute>{withSuspense(<Dashboard />)}</PrivateRoute>
             },
             {
                 path: "/booking",
-                element: <PrivateRoute>
-                    <Booking></Booking>
-                </PrivateRoute>,
+                element: <PrivateRoute>{withSuspense(<Booking />)}</PrivateRoute>,
             },
             {
                 path: "/hotelDetails/:id",
-                element: <PrivateRoute>
-                    <HotelDetails></HotelDetails>
-                </PrivateRoute>
+                element: <PrivateRoute>{withSuspense(<HotelDetails />)}</PrivateRoute>
             },
             {
                 path: "/userProfile",
-                element: <PrivateRoute>
-                    <UserProfile></UserProfile>
-                </PrivateRoute>
+                element: <PrivateRoute>{withSuspense(<UserProfile />)}</PrivateRoute>
             },
             {
                 path: "/itinerary",
-                element: <PrivateRoute>
-                    <Itinerary></Itinerary>
-                </PrivateRoute>
-            },
-            {
-                path: "/itinerary",
-                element: <PrivateRoute>
-                    <Itinerary></Itinerary>
-                </PrivateRoute>
+                element: <PrivateRoute>{withSuspense(<Itinerary />)}</PrivateRoute>
             },
             {
                 path: "/Booking_Status",
-                element: <PrivateRoute>
-                    <BookingStatusTab></BookingStatusTab>
-                </PrivateRoute>
+                element: <PrivateRoute>{withSuspense(<BookingStatusTab />)}</PrivateRoute>
             },
             {
                 path: "/History",
-                element: <PrivateRoute>
-                    <HistoryTab></HistoryTab>
-                </PrivateRoute>
+                element: <PrivateRoute>{withSuspense(<HistoryTab />)}</PrivateRoute>
             },
             {
                 path: "/Expense_Tracking",
-                element: <PrivateRoute>
-                    <ExpenseTrackingTab></ExpenseTrackingTab>
-                </PrivateRoute>
-            },
-            // {
-            //     path: "/googleMap",
-            //     element: <GoogleMap latitude={23.800631731459443} longitude={90.41142662901615}></GoogleMap>
-            // }
-
+                element: <PrivateRoute>{withSuspense(<ExpenseTrackingTab />)}</PrivateRoute>
+            }
         ]
     },
 ]);

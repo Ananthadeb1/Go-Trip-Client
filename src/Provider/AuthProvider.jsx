@@ -34,6 +34,7 @@ const isTokenForUser = (token, email) => {
         const decodedPayload = JSON.parse(jsonPayload);
         return decodedPayload.email === email;
     } catch (e) {
+        console.log(e);
         return false;
     }
 };
